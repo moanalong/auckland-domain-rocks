@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auckland Domain Rock Hunter</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="painted-rock.svg" alt="painted rock" style="width: 32px; height: 32px; vertical-align: middle; margin-right: 8px;"> Auckland Domain Rock Hunter</h1>
+            <div class="controls">
+                <button id="toggle-view" class="btn">📍 View All Rocks</button>
+                <button id="add-rock-mode" class="btn">➕ Add Rock</button>
+            </div>
+        </header>
+
+        <main>
+            <div id="map" class="map-container"></div>
+            
+            <div id="rock-panel" class="panel hidden">
+                <h3>Hidden Rocks</h3>
+                <div id="rocks-list"></div>
+                <button id="close-panel" class="btn">Close</button>
+            </div>
+
+            <div id="add-rock-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Add New Rock</h3>
+                    <form id="rock-form">
+                        <input type="text" id="rock-name" placeholder="Rock name" required>
+                        <textarea id="rock-description" placeholder="Description (optional)"></textarea>
+                        
+                        <div class="camera-section">
+                            <video id="camera-preview" autoplay></video>
+                            <canvas id="photo-canvas" style="display: none;"></canvas>
+                            <div class="camera-controls">
+                                <button type="button" id="start-camera" class="btn">📷 Start Camera</button>
+                                <button type="button" id="take-photo" class="btn hidden">📸 Take Photo</button>
+                                <button type="button" id="retake-photo" class="btn hidden">🔄 Retake</button>
+                            </div>
+                            <div id="photo-preview" class="photo-preview hidden"></div>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="submit" class="btn primary">Save Rock</button>
+                            <button type="button" id="cancel-add" class="btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
