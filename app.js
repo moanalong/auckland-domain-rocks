@@ -70,6 +70,15 @@ class RockHunterApp {
             this.closeRockPanel();
         });
 
+        // Photo option controls
+        document.getElementById('take-photo-option').addEventListener('click', () => {
+            this.showCameraSection();
+        });
+
+        document.getElementById('upload-photo-option').addEventListener('click', () => {
+            this.showUploadSection();
+        });
+
         // Camera controls
         document.getElementById('start-camera').addEventListener('click', () => {
             this.startCamera();
@@ -81,6 +90,23 @@ class RockHunterApp {
 
         document.getElementById('retake-photo').addEventListener('click', () => {
             this.retakePhoto();
+        });
+
+        document.getElementById('cancel-camera').addEventListener('click', () => {
+            this.hideCameraSection();
+        });
+
+        // Upload controls
+        document.getElementById('choose-file').addEventListener('click', () => {
+            document.getElementById('photo-upload').click();
+        });
+
+        document.getElementById('photo-upload').addEventListener('change', (e) => {
+            this.handlePhotoUpload(e);
+        });
+
+        document.getElementById('cancel-upload').addEventListener('click', () => {
+            this.hideUploadSection();
         });
 
         // Form submission
@@ -166,8 +192,26 @@ class RockHunterApp {
 
     resetForm() {
         document.getElementById('rock-form').reset();
-        this.resetCameraState();
+        this.resetPhotoSection();
         this.currentPhoto = null;
+    }
+
+    resetPhotoSection() {
+        // Show photo options
+        document.querySelector('.photo-options').classList.remove('hidden');
+        
+        // Hide camera and upload sections
+        document.querySelector('.camera-section').classList.add('hidden');
+        document.querySelector('.upload-section').classList.add('hidden');
+        
+        // Reset camera state
+        this.resetCameraState();
+        
+        // Clear file input
+        document.getElementById('photo-upload').value = '';
+        
+        // Hide photo preview
+        document.getElementById('photo-preview').classList.add('hidden');
     }
 
     resetCameraState() {
@@ -236,6 +280,111 @@ class RockHunterApp {
             this.stream.getTracks().forEach(track => track.stop());
             this.stream = null;
         }
+    }
+
+    showCameraSection() {
+        // Hide photo options and upload section
+        document.querySelector('.photo-options').classList.add('hidden');
+        document.querySelector('.upload-section').classList.add('hidden');
+        
+        // Show camera section
+        document.querySelector('.camera-section').classList.remove('hidden');
+        
+        // Reset camera state
+        this.resetCameraState();
+    }
+
+    hideCameraSection() {
+        // Hide camera section
+        document.querySelector('.camera-section').classList.add('hidden');
+        
+        // Show photo options
+        document.querySelector('.photo-options').classList.remove('hidden');
+        
+        // Stop camera and reset
+        this.stopCamera();
+        this.resetCameraState();
+        
+        // Clear any existing photo
+        document.getElementById('photo-preview').classList.add('hidden');
+        this.currentPhoto = null;
+    }
+
+    showUploadSection() {
+        // Hide photo options and camera section
+        document.querySelector('.photo-options').classList.add('hidden');
+        document.querySelector('.camera-section').classList.add('hidden');
+        
+        // Show upload section
+        document.querySelector('.upload-section').classList.remove('hidden');
+    }
+
+    hideUploadSection() {
+        // Hide upload section
+        document.querySelector('.upload-section').classList.add('hidden');
+        
+        // Show photo options
+        document.querySelector('.photo-options').classList.remove('hidden');
+        
+        // Clear file input
+        document.getElementById('photo-upload').value = '';
+        
+        // Clear any existing photo preview
+        document.getElementById('photo-preview').classList.add('hidden');
+        this.currentPhoto = null;
+    }
+
+    handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Image file too large. Please select an image under 10MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Create canvas to resize image if needed
+                const canvas = document.getElementById('photo-canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate new dimensions (max 800px width/height)
+                let { width, height } = img;
+                const maxSize = 800;
+
+                if (width > height && width > maxSize) {
+                    height = (height * maxSize) / width;
+                    width = maxSize;
+                } else if (height > maxSize) {
+                    width = (width * maxSize) / height;
+                    height = maxSize;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Draw and compress image
+                ctx.drawImage(img, 0, 0, width, height);
+                this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
+
+                // Show preview
+                const preview = document.getElementById('photo-preview');
+                preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
+                preview.classList.remove('hidden');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     handleRockSubmission(e) {

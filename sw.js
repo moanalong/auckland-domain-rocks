@@ -1,7 +1,7 @@
 // Service Worker for Aggressive Cache Busting
 // Auckland Domain Rock Hunter - Force Cache Invalidation
 
-const CACHE_VERSION = 'auckland-rocks-v1757748500-user-auth';
+const CACHE_VERSION = 'auckland-rocks-v1757759200-photo-upload';
 const CACHE_NAME = `auckland-rock-hunter-${CACHE_VERSION}`;
 
 // List of files to cache (none - we want to force network requests)

@@ -333,12 +333,60 @@ h1 {
     border-color: #3498db;
 }
 
-.camera-section {
+/* Photo Section Styles */
+.photo-section {
     border: 2px dashed #ddd;
     border-radius: 8px;
     padding: 20px;
     text-align: center;
     margin-bottom: 20px;
+}
+
+.photo-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.photo-option {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.photo-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.camera-section {
+    border: 2px dashed #4CAF50;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.upload-section {
+    border: 2px dashed #2196F3;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: rgba(33, 150, 243, 0.05);
+}
+
+.upload-section .btn {
+    margin: 5px;
 }
 
 #camera-preview {
@@ -826,5 +874,42 @@ h1 {
     /* Mobile Posting Toggle */
     .posting-toggle {
         margin: 10px 0;
+    }
+
+    /* Mobile Photo Options */
+    .photo-options {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .photo-option {
+        width: 100%;
+        padding: 15px;
+        font-size: 18px;
+    }
+
+    .camera-section, .upload-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    #camera-preview {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .camera-controls {
+        gap: 8px;
+    }
+
+    .camera-controls .btn, .upload-section .btn {
+        padding: 12px 16px;
+        font-size: 16px;
+        min-width: 120px;
+    }
+
+    .photo-preview img {
+        max-width: 100%;
+        max-height: 250px;
     }
 }

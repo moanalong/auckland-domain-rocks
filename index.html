@@ -15,19 +15,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <meta name="mobile-web-app-version" content="1757749063">
+    <meta name="mobile-web-app-version" content="1757759200">
     <meta name="theme-color" content="#3498db">
     <!-- Force Safari to reload everything -->
-    <meta name="version" content="1757749063-user-auth-features">
-    <meta name="build" content="1757749063">
-    <meta name="cache-buster" content="1757749063">
+    <meta name="version" content="1757759200-photo-upload-feature">
+    <meta name="build" content="1757759200">
+    <meta name="cache-buster" content="1757759200">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757749063&user-auth=complete&cache-bust=force&mobile=extreme">
+    <link rel="stylesheet" href="styles.css?v=1757759200&photo-upload=complete&cache-bust=force&mobile=extreme">
     <script>
         // EXTREME AGGRESSIVE CACHE BUSTING - Permanent Solution
         (function() {
-            const APP_VERSION = '1757749063-user-auth-features';
+            const APP_VERSION = '1757759200-photo-upload-feature';
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             
@@ -263,14 +263,29 @@
                             <small>Uncheck to post anonymously</small>
                         </div>
                         
-                        <div class="camera-section">
-                            <video id="camera-preview" autoplay></video>
-                            <canvas id="photo-canvas" style="display: none;"></canvas>
-                            <div class="camera-controls">
-                                <button type="button" id="start-camera" class="btn">📷 Start Camera</button>
-                                <button type="button" id="take-photo" class="btn hidden">📸 Take Photo</button>
-                                <button type="button" id="retake-photo" class="btn hidden">🔄 Retake</button>
+                        <div class="photo-section">
+                            <div class="photo-options">
+                                <button type="button" id="take-photo-option" class="btn photo-option">📷 Take Photo</button>
+                                <button type="button" id="upload-photo-option" class="btn photo-option">📁 Upload Photo</button>
                             </div>
+                            
+                            <div class="camera-section hidden">
+                                <video id="camera-preview" autoplay></video>
+                                <canvas id="photo-canvas" style="display: none;"></canvas>
+                                <div class="camera-controls">
+                                    <button type="button" id="start-camera" class="btn">📷 Start Camera</button>
+                                    <button type="button" id="take-photo" class="btn hidden">📸 Take Photo</button>
+                                    <button type="button" id="retake-photo" class="btn hidden">🔄 Retake</button>
+                                    <button type="button" id="cancel-camera" class="btn">❌ Cancel</button>
+                                </div>
+                            </div>
+                            
+                            <div class="upload-section hidden">
+                                <input type="file" id="photo-upload" accept="image/*" capture="environment" style="display: none;">
+                                <button type="button" id="choose-file" class="btn">📁 Choose from Photos</button>
+                                <button type="button" id="cancel-upload" class="btn">❌ Cancel</button>
+                            </div>
+                            
                             <div id="photo-preview" class="photo-preview hidden"></div>
                         </div>
                         
@@ -285,6 +300,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757749063&user-auth=complete&cache-bust=force&mobile=extreme"></script>
+    <script src="app.js?v=1757759200&photo-upload=complete&cache-bust=force&mobile=extreme"></script>
 </body>
 </html>
