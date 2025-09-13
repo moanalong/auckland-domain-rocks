@@ -479,7 +479,7 @@ class RockHunterApp {
     }
 
     checkForUpdates() {
-        const currentVersion = '1757750511-photo-upload-nuclear';
+        const currentVersion = '1757751037-photo-gallery-fix';
         const lastVersion = localStorage.getItem('auckland_app_version');
         const lastCheck = localStorage.getItem('auckland_last_check');
         const now = Date.now();
@@ -518,7 +518,7 @@ class RockHunterApp {
             animation: slideIn 0.5s ease-out;
         `;
         notification.innerHTML = `
-            🚀 App Updated! New photo upload features available.
+            🚀 App Updated! Photo gallery access fixed - choose from photos now works!
             <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;margin-left:10px;cursor:pointer;">✕</button>
         `;
         

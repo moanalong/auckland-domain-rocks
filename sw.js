@@ -1,7 +1,7 @@
 // Service Worker for NUCLEAR Cache Busting
 // Auckland Domain Rock Hunter - EXTREME Cache Invalidation
 
-const CACHE_VERSION = 'auckland-rocks-v1757750511-nuclear';
+const CACHE_VERSION = 'auckland-rocks-v1757751037-gallery-fix';
 const CACHE_NAME = `auckland-rock-hunter-${CACHE_VERSION}`;
 const TIMESTAMP = Date.now();
 
