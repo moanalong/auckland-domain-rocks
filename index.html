@@ -3,12 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <!-- Aggressive cache busting for mobile browsers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Last-Modified" content="Mon, 13 Jan 2025 00:00:00 GMT">
+    <meta name="cache-control" content="no-cache">
+    <meta name="cache-control" content="no-store">
+    <meta name="cache-control" content="must-revalidate">
+    <!-- iOS Safari specific cache busting -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=2024120901&bust=1733851200">
+    <link rel="stylesheet" href="styles.css?v=1757747658&features=complete&mobile=force">
+    <script>
+        // Aggressive cache busting for mobile browsers
+        (function() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const currentVersion = '1757747658-features-complete';
+            
+            if (isMobile) {
+                // Force cache clearing on mobile
+                const lastVersion = localStorage.getItem('app_version');
+                if (lastVersion !== currentVersion) {
+                    console.log('New version detected, clearing cache:', currentVersion);
+                    localStorage.setItem('app_version', currentVersion);
+                    
+                    // Clear all caches
+                    if ('caches' in window) {
+                        caches.keys().then(names => {
+                            names.forEach(name => caches.delete(name));
+                        });
+                    }
+                    
+                    // Clear session storage
+                    sessionStorage.clear();
+                    
+                    // Force reload after clearing
+                    setTimeout(() => {
+                        window.location.reload(true);
+                    }, 100);
+                }
+                
+                // Add hard refresh button for mobile
+                document.addEventListener('DOMContentLoaded', function() {
+                    const header = document.querySelector('header .controls');
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.innerHTML = '🔄 Refresh App';
+                    refreshBtn.className = 'btn refresh-btn';
+                    refreshBtn.onclick = function() {
+                        localStorage.removeItem('app_version');
+                        sessionStorage.clear();
+                        if ('caches' in window) {
+                            caches.keys().then(names => {
+                                names.forEach(name => caches.delete(name));
+                                window.location.reload(true);
+                            });
+                        } else {
+                            window.location.reload(true);
+                        }
+                    };
+                    header.appendChild(refreshBtn);
+                });
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -21,6 +82,53 @@
         </header>
 
         <main>
+            <!-- Statistics Dashboard -->
+            <div id="stats-dashboard" class="stats-panel">
+                <h3>📊 Auckland Domain Rock Stats</h3>
+                <div id="stats-container">
+                    <div class="stat-item">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Total Rocks</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Still Hidden</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Found</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Panel -->
+            <div id="search-panel" class="panel">
+                <h3>🔍 Search & Filter Rocks</h3>
+                <div class="search-controls">
+                    <input type="text" id="search-input" placeholder="Search by rock name or description...">
+                    
+                    <div class="filter-row">
+                        <select id="status-filter">
+                            <option value="all">All Rocks</option>
+                            <option value="hidden">Hidden Only</option>
+                            <option value="found">Found Only</option>
+                        </select>
+                        
+                        <select id="date-filter">
+                            <option value="all">All Time</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="recent">Last 3 Days</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn primary">Apply Filters</button>
+                        <button id="clear-filters" class="btn">Clear All</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="map" class="map-container"></div>
             
             <div id="rock-panel" class="panel hidden">
@@ -58,6 +166,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=1757747658&features=complete&mobile=force"></script>
 </body>
 </html>
