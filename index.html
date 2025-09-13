@@ -17,12 +17,12 @@
     <meta name="format-detection" content="telephone=no">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757747658&features=complete&mobile=force">
+    <link rel="stylesheet" href="styles.css?v=1757748144&clean=testing&data=empty">
     <script>
         // Aggressive cache busting for mobile browsers
         (function() {
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const currentVersion = '1757747658-features-complete';
+            const currentVersion = '1757748144-clean-testing';
             
             if (isMobile) {
                 // Force cache clearing on mobile
@@ -38,8 +38,9 @@
                         });
                     }
                     
-                    // Clear session storage
+                    // Clear session storage and rock data for clean testing
                     sessionStorage.clear();
+                    localStorage.removeItem('auckland-rocks');
                     
                     // Force reload after clearing
                     setTimeout(() => {
@@ -166,6 +167,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757747658&features=complete&mobile=force"></script>
+    <script src="app.js?v=1757748144&clean=testing&data=empty"></script>
 </body>
 </html>

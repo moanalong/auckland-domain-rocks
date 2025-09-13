@@ -17,6 +17,7 @@ class RockHunterApp {
         this.initEventListeners();
         this.displayRocksOnMap();
         this.updateStats();
+        this.setupAdminAccess();
     }
 
     initMap() {
@@ -353,8 +354,9 @@ class RockHunterApp {
     }
 
     loadRocks() {
-        const stored = localStorage.getItem('auckland-rocks');
-        return stored ? JSON.parse(stored) : [];
+        // Force clean start for team testing - clear any existing data
+        localStorage.removeItem('auckland-rocks');
+        return [];
     }
 
     saveRocks() {
@@ -604,6 +606,33 @@ class RockHunterApp {
 
     displayRocksOnMap() {
         this.filteredRocks.forEach(rock => this.addRockToMap(rock));
+    }
+
+    // Admin function to clear all data for team testing
+    clearAllRockData() {
+        if (confirm('⚠️ ADMIN: Clear ALL rock data? This cannot be undone!')) {
+            localStorage.removeItem('auckland-rocks');
+            this.rocks = [];
+            this.filteredRocks = [];
+            this.refreshMap();
+            this.updateStats();
+            this.updateRocksList();
+            alert('✅ All rock data cleared! Fresh start for testing.');
+        }
+    }
+
+    // Secret admin access (triple-click header)
+    setupAdminAccess() {
+        let clickCount = 0;
+        const header = document.querySelector('h1');
+        header.addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 3) {
+                this.clearAllRockData();
+                clickCount = 0;
+            }
+            setTimeout(() => { clickCount = 0; }, 2000);
+        });
     }
 }
 
