@@ -225,7 +225,7 @@ class RockHunterApp {
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: 'rock-marker',
-                html: '<img src="painted-rock.svg" alt="painted rock" style="width: 100%; height: 100%;">',
+                html: '<div class="css-rock"></div>',
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             })
