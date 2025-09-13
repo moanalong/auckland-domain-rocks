@@ -3,72 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Aggressive cache busting for mobile browsers -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private">
-    <meta http-equiv="Pragma" content="no-cache">
+    <!-- EXTREME cache busting for mobile browsers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private, proxy-revalidate">
+    <meta http-equiv="Pragma" content="no-cache, no-store">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 13 Jan 2025 00:00:00 GMT">
-    <meta name="cache-control" content="no-cache">
-    <meta name="cache-control" content="no-store">
-    <meta name="cache-control" content="must-revalidate">
-    <!-- iOS Safari specific cache busting -->
+    <meta name="cache-control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
+    <!-- iOS Safari EXTREME cache busting -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-version" content="1757749063">
+    <meta name="theme-color" content="#3498db">
+    <!-- Force Safari to reload everything -->
+    <meta name="version" content="1757749063-user-auth-features">
+    <meta name="build" content="1757749063">
+    <meta name="cache-buster" content="1757749063">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757748144&clean=testing&data=empty">
+    <link rel="stylesheet" href="styles.css?v=1757749063&user-auth=complete&cache-bust=force&mobile=extreme">
     <script>
-        // Aggressive cache busting for mobile browsers
+        // EXTREME AGGRESSIVE CACHE BUSTING - Permanent Solution
         (function() {
+            const APP_VERSION = '1757749063-user-auth-features';
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const currentVersion = '1757748144-clean-testing';
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             
-            if (isMobile) {
-                // Force cache clearing on mobile
-                const lastVersion = localStorage.getItem('app_version');
-                if (lastVersion !== currentVersion) {
-                    console.log('New version detected, clearing cache:', currentVersion);
-                    localStorage.setItem('app_version', currentVersion);
-                    
-                    // Clear all caches
-                    if ('caches' in window) {
-                        caches.keys().then(names => {
-                            names.forEach(name => caches.delete(name));
+            console.log('Cache Buster: Starting with version', APP_VERSION);
+
+            // Service Worker Registration for Cache Control
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(registration => {
+                        console.log('SW: Registered successfully');
+                        
+                        // Listen for service worker messages
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data.type === 'CACHE_CLEARED') {
+                                console.log('SW: Received cache cleared message');
+                                setTimeout(() => window.location.reload(true), 100);
+                            }
                         });
-                    }
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            console.log('SW: Update found, installing new service worker');
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed') {
+                                    console.log('SW: New service worker installed');
+                                    if (navigator.serviceWorker.controller) {
+                                        // New content available
+                                        forceAppRefresh();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => console.warn('SW: Registration failed', err));
+            }
+
+            // Version Detection and Auto-Update
+            function checkVersion() {
+                const lastVersion = localStorage.getItem('auckland_app_version');
+                const lastCheck = localStorage.getItem('auckland_last_check');
+                const now = Date.now();
+                
+                console.log('Version Check: Last =', lastVersion, 'Current =', APP_VERSION);
+                
+                if (lastVersion !== APP_VERSION || (now - parseInt(lastCheck)) > 300000) { // 5 minutes
+                    console.log('Version Update: Clearing all caches and data');
+                    localStorage.setItem('auckland_app_version', APP_VERSION);
+                    localStorage.setItem('auckland_last_check', now.toString());
                     
-                    // Clear session storage and rock data for clean testing
-                    sessionStorage.clear();
-                    localStorage.removeItem('auckland-rocks');
-                    
-                    // Force reload after clearing
-                    setTimeout(() => {
-                        window.location.reload(true);
-                    }, 100);
+                    // Nuclear cache clearing
+                    clearAllCaches().then(() => {
+                        if (lastVersion !== APP_VERSION) {
+                            setTimeout(() => window.location.reload(true), 200);
+                        }
+                    });
+                }
+            }
+
+            // Nuclear Cache Clearing Function
+            async function clearAllCaches() {
+                console.log('Nuclear Cache Clear: Starting total cache obliteration');
+                
+                // 1. Clear all browser caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => {
+                        console.log('Deleting cache:', name);
+                        return caches.delete(name);
+                    }));
                 }
                 
-                // Add hard refresh button for mobile
+                // 2. Clear session storage
+                sessionStorage.clear();
+                
+                // 3. Clear specific localStorage items (keep user accounts)
+                const keysToKeep = ['auckland-rock-users', 'auckland-rock-current-user'];
+                const allKeys = Object.keys(localStorage);
+                allKeys.forEach(key => {
+                    if (!keysToKeep.includes(key) && !key.startsWith('auckland_app_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // 4. iOS Safari specific clearing
+                if (isIOS) {
+                    try {
+                        // Force DOM reload
+                        document.documentElement.style.display = 'none';
+                        document.documentElement.offsetHeight; // Trigger reflow
+                        document.documentElement.style.display = '';
+                    } catch (e) {
+                        console.warn('iOS force reflow failed:', e);
+                    }
+                }
+                
+                console.log('Nuclear Cache Clear: Complete');
+            }
+
+            // Force App Refresh
+            function forceAppRefresh() {
+                console.log('Force Refresh: Initiating app refresh');
+                
+                // Send message to service worker
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'FORCE_REFRESH'
+                    });
+                } else {
+                    clearAllCaches().then(() => {
+                        window.location.reload(true);
+                    });
+                }
+            }
+
+            // Manual Refresh Button for Mobile
+            function addRefreshButton() {
                 document.addEventListener('DOMContentLoaded', function() {
-                    const header = document.querySelector('header .controls');
-                    const refreshBtn = document.createElement('button');
-                    refreshBtn.innerHTML = '🔄 Refresh App';
-                    refreshBtn.className = 'btn refresh-btn';
-                    refreshBtn.onclick = function() {
-                        localStorage.removeItem('app_version');
-                        sessionStorage.clear();
-                        if ('caches' in window) {
-                            caches.keys().then(names => {
-                                names.forEach(name => caches.delete(name));
-                                window.location.reload(true);
-                            });
-                        } else {
-                            window.location.reload(true);
+                    if (isMobile) {
+                        const header = document.querySelector('header .controls');
+                        if (header) {
+                            const refreshBtn = document.createElement('button');
+                            refreshBtn.innerHTML = '🔄 Force Refresh';
+                            refreshBtn.className = 'btn refresh-btn';
+                            refreshBtn.title = 'Clear all caches and reload app';
+                            refreshBtn.onclick = function() {
+                                console.log('Manual Refresh: User initiated');
+                                localStorage.removeItem('auckland_app_version');
+                                forceAppRefresh();
+                            };
+                            header.appendChild(refreshBtn);
                         }
-                    };
-                    header.appendChild(refreshBtn);
+                    }
                 });
             }
+
+            // Initialize everything
+            checkVersion();
+            addRefreshButton();
+
+            // Double-check version on focus (when user returns to app)
+            window.addEventListener('focus', () => {
+                setTimeout(checkVersion, 1000);
+            });
+
+            // Check version every 2 minutes
+            setInterval(checkVersion, 120000);
+
         })();
     </script>
 </head>
@@ -79,6 +186,9 @@
             <div class="controls">
                 <button id="toggle-view" class="btn">📍 View All Rocks</button>
                 <button id="add-rock-mode" class="btn">➕ Add Rock</button>
+                <div id="user-section" class="user-section">
+                    <!-- User authentication buttons will be added here by JavaScript -->
+                </div>
             </div>
         </header>
 
@@ -145,6 +255,14 @@
                         <input type="text" id="rock-name" placeholder="Rock name" required>
                         <textarea id="rock-description" placeholder="Description (optional)"></textarea>
                         
+                        <div id="posting-toggle" class="posting-toggle hidden">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="post-as-user" checked>
+                                <span class="toggle-text">Post as <span id="current-username"></span></span>
+                            </label>
+                            <small>Uncheck to post anonymously</small>
+                        </div>
+                        
                         <div class="camera-section">
                             <video id="camera-preview" autoplay></video>
                             <canvas id="photo-canvas" style="display: none;"></canvas>
@@ -167,6 +285,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757748144&clean=testing&data=empty"></script>
+    <script src="app.js?v=1757749063&user-auth=complete&cache-bust=force&mobile=extreme"></script>
 </body>
 </html>

@@ -12,12 +12,18 @@ class RockHunterApp {
             date: 'all'
         };
         this.filteredRocks = this.rocks;
+        
+        // User authentication system
+        this.currentUser = this.loadCurrentUser();
+        this.users = this.loadUsers();
+        this.postAsUser = true; // Default to posting as user when logged in
 
         this.initMap();
         this.initEventListeners();
         this.displayRocksOnMap();
         this.updateStats();
         this.setupAdminAccess();
+        this.updateUserInterface();
     }
 
     initMap() {
@@ -129,6 +135,25 @@ class RockHunterApp {
     showAddRockModal() {
         document.getElementById('add-rock-modal').classList.remove('hidden');
         document.getElementById('rock-name').focus();
+        
+        // Show/hide posting toggle based on login status
+        const postingToggle = document.getElementById('posting-toggle');
+        const currentUsername = document.getElementById('current-username');
+        const postAsUserCheckbox = document.getElementById('post-as-user');
+        
+        if (this.currentUser) {
+            postingToggle.classList.remove('hidden');
+            currentUsername.textContent = this.currentUser.username;
+            postAsUserCheckbox.checked = this.postAsUser;
+            
+            // Update postAsUser when checkbox changes
+            postAsUserCheckbox.onchange = () => {
+                this.postAsUser = postAsUserCheckbox.checked;
+            };
+        } else {
+            postingToggle.classList.add('hidden');
+        }
+        
         this.resetCameraState();
     }
 
@@ -241,7 +266,12 @@ class RockHunterApp {
             foundBy: null,
             foundTimestamp: null,
             foundPhoto: null,
-            foundNotes: ''
+            foundNotes: '',
+            // User tracking
+            postedBy: this.currentUser && this.postAsUser ? this.currentUser.id : null,
+            postedByUsername: this.currentUser && this.postAsUser ? this.currentUser.username : null,
+            isAnonymous: !this.currentUser || !this.postAsUser,
+            foundByUserId: null
         };
 
         this.addRock(rock);
@@ -283,6 +313,11 @@ class RockHunterApp {
         
         // Rock status and timestamps
         popupContent += `<div class="rock-info">`;
+        if (rock.postedByUsername && !rock.isAnonymous) {
+            popupContent += `<p class="posted-by">👤 Posted by: <strong>${rock.postedByUsername}</strong></p>`;
+        } else {
+            popupContent += `<p class="posted-by">👻 Posted anonymously</p>`;
+        }
         popupContent += `<p><small>📅 Added: ${new Date(rock.timestamp).toLocaleDateString()}</small></p>`;
         
         if (rock.status === 'found') {
@@ -463,10 +498,11 @@ class RockHunterApp {
 
             // Update rock status
             rock.status = 'found';
-            rock.foundBy = finderName || 'Anonymous';
+            rock.foundBy = finderName || (this.currentUser ? this.currentUser.username : 'Anonymous');
             rock.foundTimestamp = new Date().toISOString();
             rock.foundPhoto = foundPhoto;
             rock.foundNotes = foundNotes;
+            rock.foundByUserId = this.currentUser ? this.currentUser.id : null;
 
             this.saveRocks();
             this.refreshMap();
@@ -633,6 +669,265 @@ class RockHunterApp {
             }
             setTimeout(() => { clickCount = 0; }, 2000);
         });
+    }
+
+    // User Authentication Methods
+    loadUsers() {
+        const stored = localStorage.getItem('auckland-rock-users');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    saveUsers() {
+        localStorage.setItem('auckland-rock-users', JSON.stringify(this.users));
+    }
+
+    loadCurrentUser() {
+        const stored = localStorage.getItem('auckland-rock-current-user');
+        return stored ? JSON.parse(stored) : null;
+    }
+
+    saveCurrentUser(user) {
+        if (user) {
+            localStorage.setItem('auckland-rock-current-user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('auckland-rock-current-user');
+        }
+        this.currentUser = user;
+        this.updateUserInterface();
+    }
+
+    signUp(username, email, password) {
+        // Check if username or email already exists
+        if (this.users.find(u => u.username === username)) {
+            throw new Error('Username already exists');
+        }
+        if (this.users.find(u => u.email === email)) {
+            throw new Error('Email already registered');
+        }
+
+        const user = {
+            id: Date.now().toString(),
+            username: username,
+            email: email,
+            password: password, // In production, this should be hashed
+            joinDate: new Date().toISOString(),
+            rocksPosted: 0,
+            rocksFound: 0
+        };
+
+        this.users.push(user);
+        this.saveUsers();
+        return user;
+    }
+
+    signIn(usernameOrEmail, password) {
+        const user = this.users.find(u => 
+            (u.username === usernameOrEmail || u.email === usernameOrEmail) && 
+            u.password === password
+        );
+        
+        if (!user) {
+            throw new Error('Invalid username/email or password');
+        }
+
+        this.saveCurrentUser(user);
+        return user;
+    }
+
+    signOut() {
+        this.saveCurrentUser(null);
+        this.postAsUser = true;
+    }
+
+    updateUserInterface() {
+        const userSection = document.getElementById('user-section');
+        if (!userSection) return;
+
+        if (this.currentUser) {
+            userSection.innerHTML = `
+                <div class="user-info">
+                    <span class="username">👤 ${this.currentUser.username}</span>
+                    <button id="user-profile" class="btn">Profile</button>
+                    <button id="sign-out" class="btn">Sign Out</button>
+                </div>
+            `;
+            
+            document.getElementById('user-profile').addEventListener('click', () => {
+                this.showUserProfile();
+            });
+            
+            document.getElementById('sign-out').addEventListener('click', () => {
+                this.signOut();
+            });
+        } else {
+            userSection.innerHTML = `
+                <div class="auth-buttons">
+                    <button id="sign-up-btn" class="btn">Sign Up</button>
+                    <button id="sign-in-btn" class="btn primary">Login</button>
+                </div>
+            `;
+            
+            document.getElementById('sign-up-btn').addEventListener('click', () => {
+                this.showSignUpModal();
+            });
+            
+            document.getElementById('sign-in-btn').addEventListener('click', () => {
+                this.showSignInModal();
+            });
+        }
+    }
+
+    showSignUpModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>🔑 Join Auckland Domain Rock Hunters</h3>
+                <form id="signup-form">
+                    <input type="text" id="signup-username" placeholder="Choose a username" required minlength="3" maxlength="20">
+                    <input type="email" id="signup-email" placeholder="Your email" required>
+                    <input type="password" id="signup-password" placeholder="Choose a password" required minlength="6">
+                    
+                    <div class="benefits">
+                        <p><strong>Benefits of signing up:</strong></p>
+                        <ul>
+                            <li>✅ Track your posted rocks</li>
+                            <li>🎯 View your found rocks history</li>
+                            <li>👤 Get credit for your discoveries</li>
+                            <li>📊 See your personal statistics</li>
+                        </ul>
+                        <p><em>You can still post anonymously anytime!</em></p>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn primary">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#signup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSignUp(modal);
+        });
+    }
+
+    showSignInModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>🔐 Welcome Back!</h3>
+                <form id="signin-form">
+                    <input type="text" id="signin-username" placeholder="Username or email" required>
+                    <input type="password" id="signin-password" placeholder="Password" required>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn primary">Sign In</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#signin-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSignIn(modal);
+        });
+    }
+
+    handleSignUp(modal) {
+        const username = modal.querySelector('#signup-username').value.trim();
+        const email = modal.querySelector('#signup-email').value.trim();
+        const password = modal.querySelector('#signup-password').value;
+
+        try {
+            const user = this.signUp(username, email, password);
+            this.saveCurrentUser(user);
+            modal.remove();
+            alert(`🎉 Welcome to Auckland Domain Rock Hunters, ${username}!`);
+        } catch (error) {
+            alert(`❌ ${error.message}`);
+        }
+    }
+
+    handleSignIn(modal) {
+        const usernameOrEmail = modal.querySelector('#signin-username').value.trim();
+        const password = modal.querySelector('#signin-password').value;
+
+        try {
+            const user = this.signIn(usernameOrEmail, password);
+            modal.remove();
+            alert(`👋 Welcome back, ${user.username}!`);
+        } catch (error) {
+            alert(`❌ ${error.message}`);
+        }
+    }
+
+    showUserProfile() {
+        const userRocks = this.rocks.filter(rock => rock.postedBy === this.currentUser.id);
+        const foundRocks = this.rocks.filter(rock => rock.foundByUserId === this.currentUser.id);
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content profile-content">
+                <h3>👤 ${this.currentUser.username}'s Profile</h3>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">${userRocks.length}</span>
+                        <span class="stat-label">Rocks Posted</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${foundRocks.length}</span>
+                        <span class="stat-label">Rocks Found</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${new Date(this.currentUser.joinDate).toLocaleDateString()}</span>
+                        <span class="stat-label">Member Since</span>
+                    </div>
+                </div>
+
+                <div class="profile-sections">
+                    <div class="profile-section">
+                        <h4>🪨 Your Posted Rocks</h4>
+                        <div class="user-rocks-list">
+                            ${userRocks.length > 0 ? userRocks.map(rock => `
+                                <div class="user-rock-item">
+                                    <strong>${rock.name}</strong>
+                                    <span class="rock-status ${rock.status}">${rock.status === 'found' ? '✅ Found' : '🔍 Hidden'}</span>
+                                    <small>${new Date(rock.timestamp).toLocaleDateString()}</small>
+                                </div>
+                            `).join('') : '<p>No rocks posted yet. Start hiding some rocks!</p>'}
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h4>🎯 Rocks You Found</h4>
+                        <div class="user-rocks-list">
+                            ${foundRocks.length > 0 ? foundRocks.map(rock => `
+                                <div class="user-rock-item">
+                                    <strong>${rock.name}</strong>
+                                    <span class="found-date">Found: ${new Date(rock.foundTimestamp).toLocaleDateString()}</span>
+                                </div>
+                            `).join('') : '<p>No rocks found yet. Keep hunting!</p>'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
     }
 }
 

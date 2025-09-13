@@ -73,6 +73,164 @@ h1 {
     background: #c0392b !important;
 }
 
+/* User Authentication Styles */
+.user-section {
+    margin-left: 15px;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.auth-buttons .btn {
+    font-size: 13px;
+    padding: 8px 16px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.username {
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.user-info .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+/* Posting Toggle */
+.posting-toggle {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.toggle-text {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.posting-toggle small {
+    color: #666;
+    font-size: 12px;
+}
+
+/* Posted By Styling */
+.posted-by {
+    color: #666;
+    font-size: 13px;
+    margin: 5px 0;
+}
+
+.posted-by strong {
+    color: #3498db;
+}
+
+/* Sign Up Modal Benefits */
+.benefits {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+    border-left: 4px solid #3498db;
+}
+
+.benefits ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.benefits li {
+    margin: 8px 0;
+    color: #2c3e50;
+}
+
+.benefits em {
+    color: #27ae60;
+    font-weight: 500;
+}
+
+/* Profile Modal */
+.profile-content {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    justify-content: space-around;
+}
+
+.profile-stats .stat-item {
+    text-align: center;
+    flex: 1;
+}
+
+.profile-sections {
+    display: grid;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.profile-section h4 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #3498db;
+}
+
+.user-rocks-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.user-rock-item {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.rock-status.found {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.rock-status.hidden {
+    color: #e67e22;
+    font-weight: bold;
+}
+
+.found-date {
+    color: #666;
+    font-size: 12px;
+}
+
 .map-container {
     height: 500px;
     width: 100%;
@@ -618,5 +776,55 @@ h1 {
         margin: 20px;
         max-width: calc(100vw - 40px);
         max-height: calc(100vh - 40px);
+    }
+
+    /* Mobile User Authentication */
+    .user-section {
+        margin-left: 0;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .auth-buttons {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .auth-buttons .btn {
+        flex: 1;
+        max-width: 120px;
+    }
+
+    .user-info {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .username {
+        order: -1;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    /* Mobile Profile */
+    .profile-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .profile-sections {
+        grid-template-columns: 1fr;
+    }
+
+    .user-rock-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    /* Mobile Posting Toggle */
+    .posting-toggle {
+        margin: 10px 0;
     }
 }
