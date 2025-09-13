@@ -24,6 +24,7 @@ class RockHunterApp {
         this.updateStats();
         this.setupAdminAccess();
         this.updateUserInterface();
+        this.checkForUpdates();
     }
 
     initMap() {
@@ -107,6 +108,11 @@ class RockHunterApp {
 
         document.getElementById('cancel-upload').addEventListener('click', () => {
             this.hideUploadSection();
+        });
+
+        // Nuclear refresh button
+        document.getElementById('nuclear-refresh').addEventListener('click', () => {
+            this.nuclearRefresh();
         });
 
         // Form submission
@@ -385,6 +391,145 @@ class RockHunterApp {
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    }
+
+    nuclearRefresh() {
+        console.log('NUCLEAR REFRESH: User initiated total app refresh');
+        
+        if (confirm('This will clear all app caches and reload the page. Continue?')) {
+            // Show loading indicator
+            const button = document.getElementById('nuclear-refresh');
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ Clearing...';
+            button.disabled = true;
+            
+            // Clear all possible caches and storage
+            this.clearAllStorageAndCaches().then(() => {
+                // Force version update
+                localStorage.setItem('auckland_app_version', 'force-refresh-' + Date.now());
+                
+                // Send message to service worker for nuclear cache clearing
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'NUCLEAR_REFRESH',
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // Hard reload after short delay
+                setTimeout(() => {
+                    window.location.href = window.location.href + '?nuclear=' + Date.now() + '&force=true';
+                }, 500);
+            });
+        }
+    }
+
+    async clearAllStorageAndCaches() {
+        console.log('NUCLEAR: Clearing all storage and caches');
+        
+        try {
+            // 1. Clear all Cache API caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => {
+                    console.log('NUCLEAR: Deleting cache:', name);
+                    return caches.delete(name);
+                }));
+            }
+            
+            // 2. Clear all localStorage except user data
+            const keysToKeep = ['auckland-rock-users', 'auckland-rock-current-user'];
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => {
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // 3. Clear sessionStorage completely
+            sessionStorage.clear();
+            
+            // 4. Clear IndexedDB if present
+            if ('indexedDB' in window) {
+                try {
+                    const databases = await indexedDB.databases();
+                    await Promise.all(databases.map(db => {
+                        return new Promise((resolve) => {
+                            const deleteReq = indexedDB.deleteDatabase(db.name);
+                            deleteReq.onsuccess = () => resolve();
+                            deleteReq.onerror = () => resolve(); // Continue even if fails
+                        });
+                    }));
+                } catch (e) {
+                    console.warn('NUCLEAR: IndexedDB clear failed:', e);
+                }
+            }
+            
+            // 5. Force DOM refresh for iOS Safari
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.documentElement.style.display = 'none';
+                document.documentElement.offsetHeight; // Force reflow
+                document.documentElement.style.display = '';
+            }
+            
+            console.log('NUCLEAR: All storage cleared successfully');
+        } catch (error) {
+            console.error('NUCLEAR: Error clearing storage:', error);
+        }
+    }
+
+    checkForUpdates() {
+        const currentVersion = '1757750511-photo-upload-nuclear';
+        const lastVersion = localStorage.getItem('auckland_app_version');
+        const lastCheck = localStorage.getItem('auckland_last_check');
+        const now = Date.now();
+        
+        console.log('Version Check: Current =', currentVersion, 'Last =', lastVersion);
+        
+        // Check if version changed or it's been more than 2 minutes since last check
+        if (lastVersion !== currentVersion || (now - parseInt(lastCheck || '0')) > 120000) {
+            console.log('UPDATE DETECTED: Clearing caches and updating');
+            
+            localStorage.setItem('auckland_app_version', currentVersion);
+            localStorage.setItem('auckland_last_check', now.toString());
+            
+            if (lastVersion && lastVersion !== currentVersion) {
+                // Version changed - show update notification
+                this.showUpdateNotification();
+                this.clearAllStorageAndCaches();
+            }
+        }
+    }
+
+    showUpdateNotification() {
+        // Create update notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            font-weight: bold;
+            animation: slideIn 0.5s ease-out;
+        `;
+        notification.innerHTML = `
+            🚀 App Updated! New photo upload features available.
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;margin-left:10px;cursor:pointer;">✕</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     handleRockSubmission(e) {

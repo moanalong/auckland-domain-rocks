@@ -1,11 +1,24 @@
-// Service Worker for Aggressive Cache Busting
-// Auckland Domain Rock Hunter - Force Cache Invalidation
+// Service Worker for NUCLEAR Cache Busting
+// Auckland Domain Rock Hunter - EXTREME Cache Invalidation
 
-const CACHE_VERSION = 'auckland-rocks-v1757759200-photo-upload';
+const CACHE_VERSION = 'auckland-rocks-v1757750511-nuclear';
 const CACHE_NAME = `auckland-rock-hunter-${CACHE_VERSION}`;
+const TIMESTAMP = Date.now();
 
-// List of files to cache (none - we want to force network requests)
+console.log('SW: NUCLEAR Cache Buster loaded at', new Date().toISOString());
+
+// List of files to cache (NONE - we want to force ALL network requests)
 const ASSETS_TO_CACHE = [];
+
+// Patterns to force reload (everything)
+const FORCE_RELOAD_PATTERNS = [
+    /\.html$/,
+    /\.js$/,
+    /\.css$/,
+    /\.json$/,
+    /\/$/,
+    /\?/
+];
 
 // Install event - clear all old caches
 self.addEventListener('install', event => {
@@ -47,62 +60,97 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch event - force network requests with cache busting
+// Fetch event - NUCLEAR network requests with extreme cache busting
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     
     // Only handle requests to our domain
     if (url.origin === location.origin) {
-        console.log('SW: Intercepting request:', url.pathname);
+        console.log('SW: NUCLEAR intercepting request:', url.pathname);
         
-        event.respondWith(
-            // Force network request with cache busting
-            fetch(addCacheBuster(event.request.url), {
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                }
-            }).catch(error => {
-                console.error('SW: Network request failed:', error);
-                // Fallback to original request if cache-busted fails
-                return fetch(event.request);
-            })
+        // Check if this file type should be force reloaded
+        const shouldForceReload = FORCE_RELOAD_PATTERNS.some(pattern => 
+            pattern.test(url.pathname) || pattern.test(url.href)
         );
+        
+        if (shouldForceReload) {
+            event.respondWith(
+                // NUCLEAR network request with extreme cache busting
+                fetch(addNuclearCacheBuster(event.request.url), {
+                    cache: 'no-store',
+                    mode: 'same-origin',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
+                        'Pragma': 'no-cache',
+                        'Expires': '-1',
+                        'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT',
+                        'If-None-Match': '*'
+                    }
+                }).catch(error => {
+                    console.error('SW: NUCLEAR request failed, trying fallback:', error);
+                    // Try original request as absolute last resort
+                    return fetch(event.request, { cache: 'no-store' });
+                })
+            );
+        }
     }
 });
 
-// Add cache busting parameters to URLs
-function addCacheBuster(url) {
-    const cacheBuster = Date.now();
+// Add NUCLEAR cache busting parameters to URLs
+function addNuclearCacheBuster(url) {
+    const now = Date.now();
+    const random = Math.random().toString(36).substring(7);
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}cb=${cacheBuster}&sw=force&mobile=nocache`;
+    return `${url}${separator}cb=${now}&r=${random}&sw=nuclear&mobile=nocache&ts=${TIMESTAMP}&force=true&v=${CACHE_VERSION}`;
+}
+
+// Legacy function for backward compatibility
+function addCacheBuster(url) {
+    return addNuclearCacheBuster(url);
 }
 
 // Listen for messages from the main thread
 self.addEventListener('message', event => {
-    if (event.data && event.data.type === 'FORCE_REFRESH') {
-        console.log('SW: Force refresh requested');
+    if (event.data && (event.data.type === 'FORCE_REFRESH' || event.data.type === 'NUCLEAR_REFRESH')) {
+        console.log('SW: NUCLEAR refresh requested at', new Date().toISOString());
         
-        // Clear all caches
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    console.log('SW: Force clearing cache:', cacheName);
-                    return caches.delete(cacheName);
-                })
-            );
-        }).then(() => {
-            // Notify all clients to reload
+        // NUCLEAR cache clearing - delete EVERYTHING
+        Promise.all([
+            // Clear all Cache API caches
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        console.log('SW: NUCLEAR clearing cache:', cacheName);
+                        return caches.delete(cacheName);
+                    })
+                );
+            }),
+            
+            // Clear all client-side storage (via message to clients)
             self.clients.matchAll().then(clients => {
                 clients.forEach(client => {
                     client.postMessage({
-                        type: 'CACHE_CLEARED',
-                        message: 'All caches cleared - reload now'
+                        type: 'NUCLEAR_CLEAR_STORAGE',
+                        timestamp: Date.now()
+                    });
+                });
+            })
+        ]).then(() => {
+            console.log('SW: NUCLEAR cache clearing complete');
+            
+            // Notify all clients that nuclear clearing is done
+            self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({
+                        type: 'NUCLEAR_CLEARED',
+                        message: 'Nuclear cache clearing complete - force reloading now',
+                        timestamp: Date.now()
                     });
                 });
             });
+        }).catch(error => {
+            console.error('SW: NUCLEAR clearing failed:', error);
         });
     }
 });

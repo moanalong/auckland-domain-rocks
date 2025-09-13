@@ -3,31 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- EXTREME cache busting for mobile browsers -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private, proxy-revalidate">
+    <!-- NUCLEAR cache busting for mobile browsers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private, proxy-revalidate, s-maxage=0">
     <meta http-equiv="Pragma" content="no-cache, no-store">
-    <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Last-Modified" content="Mon, 13 Jan 2025 00:00:00 GMT">
-    <meta name="cache-control" content="no-cache, no-store, must-revalidate, max-age=0">
-    <meta name="expires" content="0">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="Last-Modified" content="Fri, 13 Sep 2025 00:00:00 GMT">
+    <meta name="cache-control" content="no-cache, no-store, must-revalidate, max-age=0, s-maxage=0">
+    <meta name="expires" content="-1">
     <meta name="pragma" content="no-cache">
-    <!-- iOS Safari EXTREME cache busting -->
+    <!-- iOS Safari NUCLEAR cache busting -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <meta name="mobile-web-app-version" content="1757759200">
+    <meta name="mobile-web-app-version" content="1757750511">
     <meta name="theme-color" content="#3498db">
-    <!-- Force Safari to reload everything -->
-    <meta name="version" content="1757759200-photo-upload-feature">
-    <meta name="build" content="1757759200">
-    <meta name="cache-buster" content="1757759200">
+    <!-- Force Safari/Chrome/Edge to reload everything -->
+    <meta name="version" content="1757750511-photo-upload-nuclear">
+    <meta name="build" content="1757750511">
+    <meta name="cache-buster" content="1757750511">
+    <meta name="timestamp" content="1757750511">
+    <meta name="app-refresh" content="force">
+    <!-- WebKit specific cache busting -->
+    <meta name="webkit-cache-control" content="no-cache">
+    <meta name="webkit-expires" content="-1">
+    <!-- Mobile browser specific -->
+    <meta name="mobile-web-version" content="1757750511">
+    <meta name="mobile-cache-bust" content="force-1757750511">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757759200&photo-upload=complete&cache-bust=force&mobile=extreme">
+    <link rel="stylesheet" href="styles.css?v=1757750511&ts=1757750511&photo-upload=nuclear&cache-bust=force&mobile=extreme&refresh=true">
     <script>
         // EXTREME AGGRESSIVE CACHE BUSTING - Permanent Solution
         (function() {
-            const APP_VERSION = '1757759200-photo-upload-feature';
+            const APP_VERSION = '1757750511-photo-upload-nuclear';
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             
@@ -186,6 +194,7 @@
             <div class="controls">
                 <button id="toggle-view" class="btn">📍 View All Rocks</button>
                 <button id="add-rock-mode" class="btn">➕ Add Rock</button>
+                <button id="nuclear-refresh" class="btn nuclear-refresh" title="Force refresh app - clears all caches">🔄 Refresh App</button>
                 <div id="user-section" class="user-section">
                     <!-- User authentication buttons will be added here by JavaScript -->
                 </div>
@@ -300,6 +309,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757759200&photo-upload=complete&cache-bust=force&mobile=extreme"></script>
+    <script src="app.js?v=1757750511&ts=1757750511&photo-upload=nuclear&cache-bust=force&mobile=extreme&refresh=true"></script>
 </body>
 </html>

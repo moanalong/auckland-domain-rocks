@@ -389,6 +389,31 @@ h1 {
     margin: 5px;
 }
 
+/* Nuclear Refresh Button */
+.nuclear-refresh {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
+    color: white !important;
+    border: 2px solid #ff5252 !important;
+    font-weight: bold !important;
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3) !important;
+    animation: pulse-glow 2s infinite;
+}
+
+.nuclear-refresh:hover {
+    background: linear-gradient(135deg, #ff5252, #e57373) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(255, 107, 107, 0.4) !important;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { 
+        box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3); 
+    }
+    50% { 
+        box-shadow: 0 4px 16px rgba(255, 107, 107, 0.6); 
+    }
+}
+
 #camera-preview {
     width: 100%;
     max-width: 300px;
@@ -911,5 +936,14 @@ h1 {
     .photo-preview img {
         max-width: 100%;
         max-height: 250px;
+    }
+
+    /* Mobile Nuclear Refresh Button */
+    .nuclear-refresh {
+        order: -1; /* Move to front on mobile */
+        width: 100%;
+        margin-bottom: 10px;
+        font-size: 18px !important;
+        padding: 15px !important;
     }
 }
