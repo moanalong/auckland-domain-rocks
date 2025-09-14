@@ -1,3 +1,35 @@
+/* Auckland Domain Nature Theme - Color Palette */
+:root {
+    /* Cherry Blossom Pinks */
+    --cherry-light: #fde2e7;
+    --cherry-medium: #f8bbd9;
+    --cherry-dark: #e91e63;
+
+    /* Maple Autumn Colors */
+    --maple-orange: #ff7043;
+    --maple-red: #d32f2f;
+    --maple-burgundy: #8e0000;
+
+    /* Fern and Lawn Greens */
+    --fern-light: #c8e6c9;
+    --fern-medium: #4caf50;
+    --fern-dark: #2e7d32;
+    --lawn-green: #7cb342;
+
+    /* NZ Bird Colors */
+    --fantail-grey: #607d8b;
+    --pigeon-purple: #9c27b0;
+    --duck-brown: #8d6e63;
+    --parrot-green: #009688;
+    --parrot-red: #f44336;
+
+    /* Sycamore and Natural Tones */
+    --sycamore-bark: #6d4c41;
+    --silver-fern: #b0bec5;
+    --natural-white: #fafafa;
+    --shadow-soft: rgba(0,0,0,0.08);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +38,244 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f5f5f5;
+    background: linear-gradient(135deg, var(--natural-white) 0%, var(--cherry-light) 50%, var(--fern-light) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Decorative Nature Background Pattern */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.03;
+    z-index: -1;
+    background-image:
+        radial-gradient(circle at 20% 20%, var(--cherry-medium) 2px, transparent 2px),
+        radial-gradient(circle at 80% 40%, var(--fern-medium) 1px, transparent 1px),
+        radial-gradient(circle at 40% 80%, var(--maple-orange) 1.5px, transparent 1.5px),
+        radial-gradient(circle at 90% 10%, var(--parrot-green) 1px, transparent 1px);
+    background-size: 150px 150px, 200px 200px, 180px 180px, 120px 120px;
+    background-position: 0 0, 50px 50px, 100px 20px, 150px 100px;
+}
+
+/* ===== NATURE ICONS & GRAPHICS ===== */
+
+/* Cherry Blossom Icon */
+.cherry-blossom {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+}
+
+.cherry-blossom::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, var(--cherry-medium) 30%, var(--cherry-light) 70%);
+    border-radius: 50% 0 50% 50%;
+    transform: rotate(-45deg);
+    top: 2px;
+    left: 2px;
+    box-shadow:
+        8px 0px 0 -2px var(--cherry-medium),
+        0px 8px 0 -2px var(--cherry-light),
+        8px 8px 0 -3px var(--cherry-dark);
+}
+
+/* Maple Leaf Icon */
+.maple-leaf {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 18px;
+}
+
+.maple-leaf::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(45deg, var(--maple-red) 0%, var(--maple-orange) 100%);
+    clip-path: polygon(50% 0%, 80% 10%, 100% 35%, 75% 50%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 25% 50%, 0% 35%, 20% 10%);
+    top: 2px;
+    left: 2px;
+}
+
+.maple-leaf::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 8px;
+    background: var(--sycamore-bark);
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Silver Fern Frond */
+.silver-fern {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+}
+
+.silver-fern::before {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 16px;
+    background: var(--fern-dark);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.silver-fern::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background:
+        radial-gradient(ellipse 2px 6px at 25% 20%, var(--silver-fern) 40%, transparent 40%),
+        radial-gradient(ellipse 2px 6px at 75% 20%, var(--silver-fern) 40%, transparent 40%),
+        radial-gradient(ellipse 2px 5px at 30% 40%, var(--fern-medium) 40%, transparent 40%),
+        radial-gradient(ellipse 2px 5px at 70% 40%, var(--fern-medium) 40%, transparent 40%),
+        radial-gradient(ellipse 2px 4px at 35% 60%, var(--fern-light) 40%, transparent 40%),
+        radial-gradient(ellipse 2px 4px at 65% 60%, var(--fern-light) 40%, transparent 40%);
+    left: 2px;
+    top: 2px;
+}
+
+/* Fantail Bird Icon */
+.fantail-bird {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 16px;
+}
+
+.fantail-bird::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 6px;
+    background: var(--fantail-grey);
+    border-radius: 50% 50% 20% 80%;
+    left: 6px;
+    top: 5px;
+    transform: rotate(-10deg);
+}
+
+.fantail-bird::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 8px;
+    background:
+        radial-gradient(ellipse at left, var(--fantail-grey) 30%, transparent 30%),
+        linear-gradient(45deg, var(--fantail-grey) 40%, transparent 40%);
+    right: 2px;
+    top: 4px;
+    border-radius: 0 50% 50% 0;
+    transform: rotate(15deg);
+}
+
+/* Decorative Section Divider */
+.nature-divider {
+    display: flex;
+    align-items: center;
+    margin: 30px 0;
+    position: relative;
+}
+
+.nature-divider::before {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--fern-light) 20%,
+        var(--cherry-light) 50%,
+        var(--fern-light) 80%,
+        transparent 100%);
+}
+
+.nature-divider::after {
+    content: '🌸';
+    margin: 0 20px;
+    font-size: 20px;
+    filter: hue-rotate(330deg);
+}
+
+/* ===== CUSTOM MAP MARKERS ===== */
+
+/* Nature-themed rock markers */
+.custom-rock-marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 50% 50% 50% 0;
+    border: 3px solid white;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    transform: rotate(-45deg);
+    cursor: pointer;
+}
+
+.custom-rock-marker::after {
+    content: '🪨';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    font-size: 16px;
+}
+
+/* Marker variations for different rock types */
+.rock-marker-hidden {
+    background: linear-gradient(135deg, var(--cherry-medium) 0%, var(--maple-orange) 100%);
+}
+
+.rock-marker-found {
+    background: linear-gradient(135deg, var(--fern-medium) 0%, var(--lawn-green) 100%);
+}
+
+.rock-marker-new {
+    background: linear-gradient(135deg, var(--parrot-green) 0%, var(--fantail-grey) 100%);
+    animation: pulse-marker 2s infinite;
+}
+
+@keyframes pulse-marker {
+    0%, 100% {
+        transform: rotate(-45deg) scale(1);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+        transform: rotate(-45deg) scale(1.1);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+    background: linear-gradient(135deg, var(--natural-white) 0%, var(--cherry-light) 100%);
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+    margin: 15px 20px;
+    line-height: 1.4;
+}
+
+.leaflet-popup-tip {
+    background: var(--natural-white);
 }
 
 .container {
@@ -16,21 +285,54 @@ body {
 }
 
 header {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--natural-white) 0%, var(--cherry-light) 100%);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px var(--shadow-soft);
+    margin-bottom: 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 200px;
+    height: 200px;
+    background:
+        radial-gradient(circle, var(--cherry-light) 20%, transparent 20%),
+        radial-gradient(circle, var(--fern-light) 15%, transparent 15%);
+    background-size: 30px 30px, 45px 45px;
+    background-position: 0 0, 15px 15px;
+    opacity: 0.1;
+    transform: rotate(15deg);
 }
 
 h1 {
-    color: #2c3e50;
+    color: var(--fern-dark);
     font-size: 1.8em;
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+h1::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(45deg, var(--maple-orange), var(--cherry-medium));
+    border-radius: 50%;
+    box-shadow: 0 2px 8px var(--shadow-soft);
 }
 
 .controls {
@@ -40,27 +342,78 @@ h1 {
 }
 
 .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    background: #3498db;
+    padding: 12px 24px;
+    border: 2px solid transparent;
+    border-radius: 25px;
+    background: linear-gradient(135deg, var(--fern-medium) 0%, var(--lawn-green) 100%);
     color: white;
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.3s;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
 }
 
 .btn:hover {
-    background: #2980b9;
+    background: linear-gradient(135deg, var(--fern-dark) 0%, var(--fern-medium) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn:hover::before {
+    left: 100%;
 }
 
 .btn.primary {
-    background: #27ae60;
+    background: linear-gradient(135deg, var(--cherry-dark) 0%, var(--maple-orange) 100%);
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
 }
 
 .btn.primary:hover {
-    background: #219a52;
+    background: linear-gradient(135deg, var(--maple-red) 0%, var(--cherry-dark) 100%);
+    box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
 }
+
+/* Nature-themed button variations */
+.btn.cherry {
+    background: linear-gradient(135deg, var(--cherry-medium) 0%, var(--cherry-dark) 100%);
+    box-shadow: 0 4px 15px rgba(248, 187, 208, 0.4);
+}
+
+.btn.maple {
+    background: linear-gradient(135deg, var(--maple-orange) 0%, var(--maple-red) 100%);
+    box-shadow: 0 4px 15px rgba(255, 112, 67, 0.4);
+}
+
+.btn.fantail {
+    background: linear-gradient(135deg, var(--fantail-grey) 0%, var(--pigeon-purple) 100%);
+    box-shadow: 0 4px 15px rgba(96, 125, 139, 0.4);
+}
+
+.btn.parrot {
+    background: linear-gradient(135deg, var(--parrot-green) 0%, var(--parrot-red) 100%);
+    box-shadow: 0 4px 15px rgba(0, 150, 136, 0.4);
+}
+
+.btn.fern {
+    background: linear-gradient(135deg, var(--fern-medium) 0%, var(--lawn-green) 100%);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
 
 .refresh-btn {
     background: #e74c3c !important;
@@ -240,18 +593,56 @@ h1 {
 }
 
 .panel {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-top: 20px;
+    background: linear-gradient(135deg, var(--natural-white) 0%, var(--fern-light) 100%);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px var(--shadow-soft);
+    margin-top: 30px;
     max-height: 400px;
     overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+}
+
+.panel::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: var(--cherry-light);
+    border-radius: 50%;
+    opacity: 0.3;
+}
+
+.panel::after {
+    content: '';
+    position: absolute;
+    bottom: 15px;
+    left: 20px;
+    width: 15px;
+    height: 15px;
+    background: var(--fern-medium);
+    border-radius: 50%;
+    opacity: 0.2;
 }
 
 .panel h3 {
-    color: #2c3e50;
-    margin-bottom: 15px;
+    color: var(--fern-dark);
+    margin-bottom: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.panel h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(45deg, var(--cherry-medium), var(--fern-medium));
+    border-radius: 2px;
 }
 
 .rock-item {
