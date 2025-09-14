@@ -73,21 +73,34 @@ class RockHunterApp {
 
         // Photo source controls
         document.getElementById('camera-btn').addEventListener('click', () => {
-            document.getElementById('camera-input').click();
+            // Create a temporary input with capture for camera
+            const cameraInput = document.createElement('input');
+            cameraInput.type = 'file';
+            cameraInput.accept = 'image/*';
+            cameraInput.capture = true;
+            cameraInput.style.display = 'none';
+            cameraInput.addEventListener('change', (e) => {
+                this.handlePhotoUpload(e);
+            });
+            document.body.appendChild(cameraInput);
+            cameraInput.click();
+            document.body.removeChild(cameraInput);
         });
 
         document.getElementById('gallery-btn').addEventListener('click', () => {
-            document.getElementById('gallery-input').click();
+            // Create a temporary input without capture for gallery
+            const galleryInput = document.createElement('input');
+            galleryInput.type = 'file';
+            galleryInput.accept = 'image/*';
+            galleryInput.style.display = 'none';
+            galleryInput.addEventListener('change', (e) => {
+                this.handlePhotoUpload(e);
+            });
+            document.body.appendChild(galleryInput);
+            galleryInput.click();
+            document.body.removeChild(galleryInput);
         });
 
-        // Handle file input changes
-        document.getElementById('camera-input').addEventListener('change', (e) => {
-            this.handlePhotoUpload(e);
-        });
-
-        document.getElementById('gallery-input').addEventListener('change', (e) => {
-            this.handlePhotoUpload(e);
-        });
 
 
 
@@ -176,9 +189,11 @@ class RockHunterApp {
     }
 
     resetPhotoSection() {
-        // Clear file inputs
-        document.getElementById('camera-input').value = '';
-        document.getElementById('gallery-input').value = '';
+        // Clear camera input (gallery uses dynamic inputs)
+        const cameraInput = document.getElementById('camera-input');
+        if (cameraInput) {
+            cameraInput.value = '';
+        }
 
         // Hide photo preview
         document.getElementById('photo-preview').classList.add('hidden');
