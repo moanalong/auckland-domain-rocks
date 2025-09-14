@@ -80,20 +80,12 @@ class RockHunterApp {
             document.getElementById('gallery-input').click();
         });
 
-        document.getElementById('files-btn').addEventListener('click', () => {
-            document.getElementById('files-input').click();
-        });
-
         // Handle file input changes
         document.getElementById('camera-input').addEventListener('change', (e) => {
             this.handlePhotoUpload(e);
         });
 
         document.getElementById('gallery-input').addEventListener('change', (e) => {
-            this.handlePhotoUpload(e);
-        });
-
-        document.getElementById('files-input').addEventListener('change', (e) => {
             this.handlePhotoUpload(e);
         });
 
@@ -187,7 +179,6 @@ class RockHunterApp {
         // Clear file inputs
         document.getElementById('camera-input').value = '';
         document.getElementById('gallery-input').value = '';
-        document.getElementById('files-input').value = '';
 
         // Hide photo preview
         document.getElementById('photo-preview').classList.add('hidden');
