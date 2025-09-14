@@ -71,12 +71,6 @@ class RockHunterApp {
             this.closeRockPanel();
         });
 
-        // Photo option controls
-        document.getElementById('upload-photo-option').addEventListener('click', () => {
-            this.showUploadSection();
-        });
-
-
         // Photo source controls
         document.getElementById('camera-btn').addEventListener('click', () => {
             document.getElementById('camera-input').click();
@@ -103,9 +97,6 @@ class RockHunterApp {
             this.handlePhotoUpload(e);
         });
 
-        document.getElementById('cancel-upload').addEventListener('click', () => {
-            this.hideUploadSection();
-        });
 
 
         // Form submission
@@ -193,43 +184,12 @@ class RockHunterApp {
     }
 
     resetPhotoSection() {
-        // Show photo options
-        document.querySelector('.photo-options').classList.remove('hidden');
-
-        // Hide upload section
-        document.querySelector('.upload-section').classList.add('hidden');
-        
         // Clear file inputs
         document.getElementById('camera-input').value = '';
         document.getElementById('gallery-input').value = '';
         document.getElementById('files-input').value = '';
-        
+
         // Hide photo preview
-        document.getElementById('photo-preview').classList.add('hidden');
-    }
-
-
-    showUploadSection() {
-        // Hide photo options
-        document.querySelector('.photo-options').classList.add('hidden');
-        
-        // Show upload section
-        document.querySelector('.upload-section').classList.remove('hidden');
-    }
-
-    hideUploadSection() {
-        // Hide upload section
-        document.querySelector('.upload-section').classList.add('hidden');
-        
-        // Show photo options
-        document.querySelector('.photo-options').classList.remove('hidden');
-        
-        // Clear file inputs
-        document.getElementById('camera-input').value = '';
-        document.getElementById('gallery-input').value = '';
-        document.getElementById('files-input').value = '';
-        
-        // Clear any existing photo preview
         document.getElementById('photo-preview').classList.add('hidden');
         this.currentPhoto = null;
     }
