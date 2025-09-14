@@ -389,30 +389,36 @@ h1 {
     margin: 5px;
 }
 
-/* Nuclear Refresh Button */
-.nuclear-refresh {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
-    color: white !important;
-    border: 2px solid #ff5252 !important;
-    font-weight: bold !important;
-    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3) !important;
-    animation: pulse-glow 2s infinite;
+/* Photo Source Buttons */
+.photo-source-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
 }
 
-.nuclear-refresh:hover {
-    background: linear-gradient(135deg, #ff5252, #e57373) !important;
+.photo-source-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 15px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 2px solid #3498db;
+    background: white;
+    color: #3498db;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.photo-source-btn:hover {
+    background: #3498db;
+    color: white;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(255, 107, 107, 0.4) !important;
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
 }
 
-@keyframes pulse-glow {
-    0%, 100% { 
-        box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3); 
-    }
-    50% { 
-        box-shadow: 0 4px 16px rgba(255, 107, 107, 0.6); 
-    }
-}
 
 #camera-preview {
     width: 100%;
@@ -913,6 +919,20 @@ h1 {
         font-size: 18px;
     }
 
+    /* Mobile Photo Source Buttons */
+    .photo-source-buttons {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .photo-source-btn {
+        width: 100%;
+        min-width: unset;
+        padding: 18px 15px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
     .camera-section, .upload-section {
         padding: 15px;
         margin-bottom: 15px;
@@ -938,12 +958,4 @@ h1 {
         max-height: 250px;
     }
 
-    /* Mobile Nuclear Refresh Button */
-    .nuclear-refresh {
-        order: -1; /* Move to front on mobile */
-        width: 100%;
-        margin-bottom: 10px;
-        font-size: 18px !important;
-        padding: 15px !important;
-    }
 }

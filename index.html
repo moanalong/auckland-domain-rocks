@@ -3,189 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- NUCLEAR cache busting for mobile browsers -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private, proxy-revalidate, s-maxage=0">
-    <meta http-equiv="Pragma" content="no-cache, no-store">
-    <meta http-equiv="Expires" content="-1">
-    <meta http-equiv="Last-Modified" content="Fri, 13 Sep 2025 00:00:00 GMT">
-    <meta name="cache-control" content="no-cache, no-store, must-revalidate, max-age=0, s-maxage=0">
-    <meta name="expires" content="-1">
-    <meta name="pragma" content="no-cache">
-    <!-- iOS Safari NUCLEAR cache busting -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Standard cache control -->
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <!-- iOS Safari compatibility -->
     <meta name="format-detection" content="telephone=no">
-    <meta name="mobile-web-app-version" content="1757751037">
-    <meta name="theme-color" content="#3498db">
-    <!-- Force Safari/Chrome/Edge to reload everything -->
-    <meta name="version" content="1757751037-photo-gallery-fix">
-    <meta name="build" content="1757751037">
-    <meta name="cache-buster" content="1757751037">
-    <meta name="timestamp" content="1757751037">
-    <meta name="app-refresh" content="force">
-    <!-- WebKit specific cache busting -->
-    <meta name="webkit-cache-control" content="no-cache">
-    <meta name="webkit-expires" content="-1">
-    <!-- Mobile browser specific -->
-    <meta name="mobile-web-version" content="1757750511">
-    <meta name="mobile-cache-bust" content="force-1757751037">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757751037&ts=1757751037&photo-gallery=fix&cache-bust=force&mobile=extreme&refresh=true">
-    <script>
-        // EXTREME AGGRESSIVE CACHE BUSTING - Permanent Solution
-        (function() {
-            const APP_VERSION = '1757751037-photo-gallery-fix';
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            
-            console.log('Cache Buster: Starting with version', APP_VERSION);
-
-            // Service Worker Registration for Cache Control
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(registration => {
-                        console.log('SW: Registered successfully');
-                        
-                        // Listen for service worker messages
-                        navigator.serviceWorker.addEventListener('message', event => {
-                            if (event.data.type === 'CACHE_CLEARED') {
-                                console.log('SW: Received cache cleared message');
-                                setTimeout(() => window.location.reload(true), 100);
-                            }
-                        });
-                        
-                        // Check for updates
-                        registration.addEventListener('updatefound', () => {
-                            console.log('SW: Update found, installing new service worker');
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed') {
-                                    console.log('SW: New service worker installed');
-                                    if (navigator.serviceWorker.controller) {
-                                        // New content available
-                                        forceAppRefresh();
-                                    }
-                                }
-                            });
-                        });
-                    })
-                    .catch(err => console.warn('SW: Registration failed', err));
-            }
-
-            // Version Detection and Auto-Update
-            function checkVersion() {
-                const lastVersion = localStorage.getItem('auckland_app_version');
-                const lastCheck = localStorage.getItem('auckland_last_check');
-                const now = Date.now();
-                
-                console.log('Version Check: Last =', lastVersion, 'Current =', APP_VERSION);
-                
-                if (lastVersion !== APP_VERSION || (now - parseInt(lastCheck)) > 300000) { // 5 minutes
-                    console.log('Version Update: Clearing all caches and data');
-                    localStorage.setItem('auckland_app_version', APP_VERSION);
-                    localStorage.setItem('auckland_last_check', now.toString());
-                    
-                    // Nuclear cache clearing
-                    clearAllCaches().then(() => {
-                        if (lastVersion !== APP_VERSION) {
-                            setTimeout(() => window.location.reload(true), 200);
-                        }
-                    });
-                }
-            }
-
-            // Nuclear Cache Clearing Function
-            async function clearAllCaches() {
-                console.log('Nuclear Cache Clear: Starting total cache obliteration');
-                
-                // 1. Clear all browser caches
-                if ('caches' in window) {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(name => {
-                        console.log('Deleting cache:', name);
-                        return caches.delete(name);
-                    }));
-                }
-                
-                // 2. Clear session storage
-                sessionStorage.clear();
-                
-                // 3. Clear specific localStorage items (keep user accounts)
-                const keysToKeep = ['auckland-rock-users', 'auckland-rock-current-user'];
-                const allKeys = Object.keys(localStorage);
-                allKeys.forEach(key => {
-                    if (!keysToKeep.includes(key) && !key.startsWith('auckland_app_')) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                
-                // 4. iOS Safari specific clearing
-                if (isIOS) {
-                    try {
-                        // Force DOM reload
-                        document.documentElement.style.display = 'none';
-                        document.documentElement.offsetHeight; // Trigger reflow
-                        document.documentElement.style.display = '';
-                    } catch (e) {
-                        console.warn('iOS force reflow failed:', e);
-                    }
-                }
-                
-                console.log('Nuclear Cache Clear: Complete');
-            }
-
-            // Force App Refresh
-            function forceAppRefresh() {
-                console.log('Force Refresh: Initiating app refresh');
-                
-                // Send message to service worker
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({
-                        type: 'FORCE_REFRESH'
-                    });
-                } else {
-                    clearAllCaches().then(() => {
-                        window.location.reload(true);
-                    });
-                }
-            }
-
-            // Manual Refresh Button for Mobile
-            function addRefreshButton() {
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (isMobile) {
-                        const header = document.querySelector('header .controls');
-                        if (header) {
-                            const refreshBtn = document.createElement('button');
-                            refreshBtn.innerHTML = '🔄 Force Refresh';
-                            refreshBtn.className = 'btn refresh-btn';
-                            refreshBtn.title = 'Clear all caches and reload app';
-                            refreshBtn.onclick = function() {
-                                console.log('Manual Refresh: User initiated');
-                                localStorage.removeItem('auckland_app_version');
-                                forceAppRefresh();
-                            };
-                            header.appendChild(refreshBtn);
-                        }
-                    }
-                });
-            }
-
-            // Initialize everything
-            checkVersion();
-            addRefreshButton();
-
-            // Double-check version on focus (when user returns to app)
-            window.addEventListener('focus', () => {
-                setTimeout(checkVersion, 1000);
-            });
-
-            // Check version every 2 minutes
-            setInterval(checkVersion, 120000);
-
-        })();
-    </script>
+    <link rel="stylesheet" href="styles.css?v=1757751037">
 </head>
 <body>
     <div class="container">
@@ -194,7 +19,6 @@
             <div class="controls">
                 <button id="toggle-view" class="btn">📍 View All Rocks</button>
                 <button id="add-rock-mode" class="btn">➕ Add Rock</button>
-                <button id="nuclear-refresh" class="btn nuclear-refresh" title="Force refresh app - clears all caches">🔄 Refresh App</button>
                 <div id="user-section" class="user-section">
                     <!-- User authentication buttons will be added here by JavaScript -->
                 </div>
@@ -274,24 +98,23 @@
                         
                         <div class="photo-section">
                             <div class="photo-options">
-                                <button type="button" id="take-photo-option" class="btn photo-option">📷 Take Photo</button>
-                                <button type="button" id="upload-photo-option" class="btn photo-option">📁 Upload Photo</button>
+                                <button type="button" id="upload-photo-option" class="btn photo-option">📷 Add Photo</button>
                             </div>
                             
-                            <div class="camera-section hidden">
-                                <video id="camera-preview" autoplay></video>
-                                <canvas id="photo-canvas" style="display: none;"></canvas>
-                                <div class="camera-controls">
-                                    <button type="button" id="start-camera" class="btn">📷 Start Camera</button>
-                                    <button type="button" id="take-photo" class="btn hidden">📸 Take Photo</button>
-                                    <button type="button" id="retake-photo" class="btn hidden">🔄 Retake</button>
-                                    <button type="button" id="cancel-camera" class="btn">❌ Cancel</button>
-                                </div>
-                            </div>
                             
                             <div class="upload-section hidden">
-                                <input type="file" id="photo-upload" accept="image/*" style="display: none;">
-                                <button type="button" id="choose-file" class="btn">📁 Choose from Photos</button>
+                                <!-- Hidden file inputs for different photo sources -->
+                                <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+                                <input type="file" id="gallery-input" accept="image/*" style="display: none;">
+                                <input type="file" id="files-input" accept="image/*,application/pdf,text/*" style="display: none;">
+
+                                <!-- Photo option buttons -->
+                                <div class="photo-source-buttons">
+                                    <button type="button" id="camera-btn" class="btn photo-source-btn">📷 Camera</button>
+                                    <button type="button" id="gallery-btn" class="btn photo-source-btn">🖼️ Photo Gallery</button>
+                                    <button type="button" id="files-btn" class="btn photo-source-btn">📁 Files</button>
+                                </div>
+
                                 <button type="button" id="cancel-upload" class="btn">❌ Cancel</button>
                             </div>
                             
@@ -309,6 +132,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757751037&ts=1757751037&photo-gallery=fix&cache-bust=force&mobile=extreme&refresh=true"></script>
+    <script src="app.js?v=1757751037"></script>
 </body>
 </html>

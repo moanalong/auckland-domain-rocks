@@ -72,37 +72,34 @@ class RockHunterApp {
         });
 
         // Photo option controls
-        document.getElementById('take-photo-option').addEventListener('click', () => {
-            this.showCameraSection();
-        });
-
         document.getElementById('upload-photo-option').addEventListener('click', () => {
             this.showUploadSection();
         });
 
-        // Camera controls
-        document.getElementById('start-camera').addEventListener('click', () => {
-            this.startCamera();
+
+        // Photo source controls
+        document.getElementById('camera-btn').addEventListener('click', () => {
+            document.getElementById('camera-input').click();
         });
 
-        document.getElementById('take-photo').addEventListener('click', () => {
-            this.takePhoto();
+        document.getElementById('gallery-btn').addEventListener('click', () => {
+            document.getElementById('gallery-input').click();
         });
 
-        document.getElementById('retake-photo').addEventListener('click', () => {
-            this.retakePhoto();
+        document.getElementById('files-btn').addEventListener('click', () => {
+            document.getElementById('files-input').click();
         });
 
-        document.getElementById('cancel-camera').addEventListener('click', () => {
-            this.hideCameraSection();
+        // Handle file input changes
+        document.getElementById('camera-input').addEventListener('change', (e) => {
+            this.handlePhotoUpload(e);
         });
 
-        // Upload controls
-        document.getElementById('choose-file').addEventListener('click', () => {
-            document.getElementById('photo-upload').click();
+        document.getElementById('gallery-input').addEventListener('change', (e) => {
+            this.handlePhotoUpload(e);
         });
 
-        document.getElementById('photo-upload').addEventListener('change', (e) => {
+        document.getElementById('files-input').addEventListener('change', (e) => {
             this.handlePhotoUpload(e);
         });
 
@@ -110,10 +107,6 @@ class RockHunterApp {
             this.hideUploadSection();
         });
 
-        // Nuclear refresh button
-        document.getElementById('nuclear-refresh').addEventListener('click', () => {
-            this.nuclearRefresh();
-        });
 
         // Form submission
         document.getElementById('rock-form').addEventListener('submit', (e) => {
@@ -185,14 +178,11 @@ class RockHunterApp {
         } else {
             postingToggle.classList.add('hidden');
         }
-        
-        this.resetCameraState();
     }
 
     closeAddRockModal() {
         document.getElementById('add-rock-modal').classList.add('hidden');
         this.resetForm();
-        this.stopCamera();
         this.pendingRockLocation = null;
     }
 
@@ -205,121 +195,23 @@ class RockHunterApp {
     resetPhotoSection() {
         // Show photo options
         document.querySelector('.photo-options').classList.remove('hidden');
-        
-        // Hide camera and upload sections
-        document.querySelector('.camera-section').classList.add('hidden');
+
+        // Hide upload section
         document.querySelector('.upload-section').classList.add('hidden');
         
-        // Reset camera state
-        this.resetCameraState();
-        
-        // Clear file input
-        document.getElementById('photo-upload').value = '';
+        // Clear file inputs
+        document.getElementById('camera-input').value = '';
+        document.getElementById('gallery-input').value = '';
+        document.getElementById('files-input').value = '';
         
         // Hide photo preview
         document.getElementById('photo-preview').classList.add('hidden');
     }
 
-    resetCameraState() {
-        document.getElementById('camera-preview').classList.remove('hidden');
-        document.getElementById('start-camera').classList.remove('hidden');
-        document.getElementById('take-photo').classList.add('hidden');
-        document.getElementById('retake-photo').classList.add('hidden');
-        document.getElementById('photo-preview').classList.add('hidden');
-    }
-
-    async startCamera() {
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: 300, 
-                    height: 300,
-                    facingMode: 'environment' // Use back camera if available
-                } 
-            });
-            
-            const video = document.getElementById('camera-preview');
-            video.srcObject = this.stream;
-            
-            document.getElementById('start-camera').classList.add('hidden');
-            document.getElementById('take-photo').classList.remove('hidden');
-            
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            alert('Could not access camera. Please check permissions.');
-        }
-    }
-
-    takePhoto() {
-        const video = document.getElementById('camera-preview');
-        const canvas = document.getElementById('photo-canvas');
-        const context = canvas.getContext('2d');
-        
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        context.drawImage(video, 0, 0);
-        
-        this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
-        
-        // Show preview
-        const preview = document.getElementById('photo-preview');
-        preview.innerHTML = `<img src="${this.currentPhoto}" alt="Rock photo">`;
-        preview.classList.remove('hidden');
-        
-        // Hide video and show retake option
-        video.classList.add('hidden');
-        document.getElementById('take-photo').classList.add('hidden');
-        document.getElementById('retake-photo').classList.remove('hidden');
-        
-        this.stopCamera();
-    }
-
-    retakePhoto() {
-        this.resetCameraState();
-        this.currentPhoto = null;
-        this.startCamera();
-    }
-
-    stopCamera() {
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.stream = null;
-        }
-    }
-
-    showCameraSection() {
-        // Hide photo options and upload section
-        document.querySelector('.photo-options').classList.add('hidden');
-        document.querySelector('.upload-section').classList.add('hidden');
-        
-        // Show camera section
-        document.querySelector('.camera-section').classList.remove('hidden');
-        
-        // Reset camera state
-        this.resetCameraState();
-    }
-
-    hideCameraSection() {
-        // Hide camera section
-        document.querySelector('.camera-section').classList.add('hidden');
-        
-        // Show photo options
-        document.querySelector('.photo-options').classList.remove('hidden');
-        
-        // Stop camera and reset
-        this.stopCamera();
-        this.resetCameraState();
-        
-        // Clear any existing photo
-        document.getElementById('photo-preview').classList.add('hidden');
-        this.currentPhoto = null;
-    }
 
     showUploadSection() {
-        // Hide photo options and camera section
+        // Hide photo options
         document.querySelector('.photo-options').classList.add('hidden');
-        document.querySelector('.camera-section').classList.add('hidden');
         
         // Show upload section
         document.querySelector('.upload-section').classList.remove('hidden');
@@ -332,8 +224,10 @@ class RockHunterApp {
         // Show photo options
         document.querySelector('.photo-options').classList.remove('hidden');
         
-        // Clear file input
-        document.getElementById('photo-upload').value = '';
+        // Clear file inputs
+        document.getElementById('camera-input').value = '';
+        document.getElementById('gallery-input').value = '';
+        document.getElementById('files-input').value = '';
         
         // Clear any existing photo preview
         document.getElementById('photo-preview').classList.add('hidden');
@@ -393,90 +287,6 @@ class RockHunterApp {
         reader.readAsDataURL(file);
     }
 
-    nuclearRefresh() {
-        console.log('NUCLEAR REFRESH: User initiated total app refresh');
-        
-        if (confirm('This will clear all app caches and reload the page. Continue?')) {
-            // Show loading indicator
-            const button = document.getElementById('nuclear-refresh');
-            const originalText = button.innerHTML;
-            button.innerHTML = '⏳ Clearing...';
-            button.disabled = true;
-            
-            // Clear all possible caches and storage
-            this.clearAllStorageAndCaches().then(() => {
-                // Force version update
-                localStorage.setItem('auckland_app_version', 'force-refresh-' + Date.now());
-                
-                // Send message to service worker for nuclear cache clearing
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({
-                        type: 'NUCLEAR_REFRESH',
-                        timestamp: Date.now()
-                    });
-                }
-                
-                // Hard reload after short delay
-                setTimeout(() => {
-                    window.location.href = window.location.href + '?nuclear=' + Date.now() + '&force=true';
-                }, 500);
-            });
-        }
-    }
-
-    async clearAllStorageAndCaches() {
-        console.log('NUCLEAR: Clearing all storage and caches');
-        
-        try {
-            // 1. Clear all Cache API caches
-            if ('caches' in window) {
-                const cacheNames = await caches.keys();
-                await Promise.all(cacheNames.map(name => {
-                    console.log('NUCLEAR: Deleting cache:', name);
-                    return caches.delete(name);
-                }));
-            }
-            
-            // 2. Clear all localStorage except user data
-            const keysToKeep = ['auckland-rock-users', 'auckland-rock-current-user'];
-            const allKeys = Object.keys(localStorage);
-            allKeys.forEach(key => {
-                if (!keysToKeep.includes(key)) {
-                    localStorage.removeItem(key);
-                }
-            });
-            
-            // 3. Clear sessionStorage completely
-            sessionStorage.clear();
-            
-            // 4. Clear IndexedDB if present
-            if ('indexedDB' in window) {
-                try {
-                    const databases = await indexedDB.databases();
-                    await Promise.all(databases.map(db => {
-                        return new Promise((resolve) => {
-                            const deleteReq = indexedDB.deleteDatabase(db.name);
-                            deleteReq.onsuccess = () => resolve();
-                            deleteReq.onerror = () => resolve(); // Continue even if fails
-                        });
-                    }));
-                } catch (e) {
-                    console.warn('NUCLEAR: IndexedDB clear failed:', e);
-                }
-            }
-            
-            // 5. Force DOM refresh for iOS Safari
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                document.documentElement.style.display = 'none';
-                document.documentElement.offsetHeight; // Force reflow
-                document.documentElement.style.display = '';
-            }
-            
-            console.log('NUCLEAR: All storage cleared successfully');
-        } catch (error) {
-            console.error('NUCLEAR: Error clearing storage:', error);
-        }
-    }
 
     checkForUpdates() {
         const currentVersion = '1757751037-photo-gallery-fix';
@@ -1056,7 +866,7 @@ class RockHunterApp {
         } else {
             userSection.innerHTML = `
                 <div class="auth-buttons">
-                    <button id="sign-up-btn" class="btn">Sign Up</button>
+                    <button id="sign-up-btn" class="btn">Sign Up (optional)</button>
                     <button id="sign-in-btn" class="btn primary">Login</button>
                 </div>
             `;
