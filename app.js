@@ -73,32 +73,50 @@ class RockHunterApp {
 
         // Photo source controls
         document.getElementById('camera-btn').addEventListener('click', () => {
-            // Create a temporary input with capture for camera
-            const cameraInput = document.createElement('input');
-            cameraInput.type = 'file';
-            cameraInput.accept = 'image/*';
-            cameraInput.capture = true;
-            cameraInput.style.display = 'none';
-            cameraInput.addEventListener('change', (e) => {
-                this.handlePhotoUpload(e);
-            });
-            document.body.appendChild(cameraInput);
-            cameraInput.click();
-            document.body.removeChild(cameraInput);
+            // Try using Media Capture API first, fallback to file input
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                this.openCamera();
+            } else {
+                // Fallback to file input with specific camera attributes
+                const cameraInput = document.createElement('input');
+                cameraInput.type = 'file';
+                cameraInput.accept = 'image/*';
+                cameraInput.setAttribute('capture', 'environment');
+                cameraInput.setAttribute('capture', 'camera');
+                cameraInput.style.display = 'none';
+                cameraInput.addEventListener('change', (e) => {
+                    this.handlePhotoUpload(e);
+                });
+                document.body.appendChild(cameraInput);
+                cameraInput.click();
+                setTimeout(() => {
+                    if (document.body.contains(cameraInput)) {
+                        document.body.removeChild(cameraInput);
+                    }
+                }, 1000);
+            }
         });
 
         document.getElementById('gallery-btn').addEventListener('click', () => {
-            // Create a temporary input without capture for gallery
+            // Use file input with very specific gallery attributes
             const galleryInput = document.createElement('input');
             galleryInput.type = 'file';
-            galleryInput.accept = 'image/*';
+            galleryInput.accept = 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/tiff';
             galleryInput.style.display = 'none';
+
+            // Add attributes to hint at gallery-only behavior
+            galleryInput.setAttribute('data-source', 'gallery');
+
             galleryInput.addEventListener('change', (e) => {
                 this.handlePhotoUpload(e);
             });
             document.body.appendChild(galleryInput);
             galleryInput.click();
-            document.body.removeChild(galleryInput);
+            setTimeout(() => {
+                if (document.body.contains(galleryInput)) {
+                    document.body.removeChild(galleryInput);
+                }
+            }, 1000);
         });
 
 
@@ -186,6 +204,100 @@ class RockHunterApp {
         document.getElementById('rock-form').reset();
         this.resetPhotoSection();
         this.currentPhoto = null;
+    }
+
+    async openCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+
+            // Create a video element to show camera preview
+            const video = document.createElement('video');
+            video.style.position = 'fixed';
+            video.style.top = '0';
+            video.style.left = '0';
+            video.style.width = '100vw';
+            video.style.height = '100vh';
+            video.style.zIndex = '10000';
+            video.style.objectFit = 'cover';
+            video.autoplay = true;
+            video.playsInline = true;
+            video.srcObject = stream;
+
+            // Create capture button
+            const captureBtn = document.createElement('button');
+            captureBtn.innerHTML = '📷 Capture';
+            captureBtn.style.position = 'fixed';
+            captureBtn.style.bottom = '50px';
+            captureBtn.style.left = '50%';
+            captureBtn.style.transform = 'translateX(-50%)';
+            captureBtn.style.zIndex = '10001';
+            captureBtn.style.padding = '15px 30px';
+            captureBtn.style.fontSize = '18px';
+            captureBtn.style.backgroundColor = 'var(--cherry-medium)';
+            captureBtn.style.color = 'white';
+            captureBtn.style.border = 'none';
+            captureBtn.style.borderRadius = '25px';
+
+            // Create close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '❌';
+            closeBtn.style.position = 'fixed';
+            closeBtn.style.top = '20px';
+            closeBtn.style.right = '20px';
+            closeBtn.style.zIndex = '10001';
+            closeBtn.style.padding = '10px';
+            closeBtn.style.fontSize = '20px';
+            closeBtn.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            closeBtn.style.color = 'white';
+            closeBtn.style.border = 'none';
+            closeBtn.style.borderRadius = '50%';
+
+            document.body.appendChild(video);
+            document.body.appendChild(captureBtn);
+            document.body.appendChild(closeBtn);
+
+            const cleanup = () => {
+                stream.getTracks().forEach(track => track.stop());
+                if (document.body.contains(video)) document.body.removeChild(video);
+                if (document.body.contains(captureBtn)) document.body.removeChild(captureBtn);
+                if (document.body.contains(closeBtn)) document.body.removeChild(closeBtn);
+            };
+
+            captureBtn.addEventListener('click', () => {
+                // Capture frame from video
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+
+                // Convert to photo
+                this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
+
+                // Show preview
+                const preview = document.getElementById('photo-preview');
+                preview.innerHTML = `<img src="${this.currentPhoto}" alt="Captured photo">`;
+                preview.classList.remove('hidden');
+
+                cleanup();
+            });
+
+            closeBtn.addEventListener('click', cleanup);
+
+        } catch (error) {
+            console.error('Camera access failed:', error);
+            // Fallback to file input
+            const cameraInput = document.createElement('input');
+            cameraInput.type = 'file';
+            cameraInput.accept = 'image/*';
+            cameraInput.setAttribute('capture', 'environment');
+            cameraInput.addEventListener('change', (e) => {
+                this.handlePhotoUpload(e);
+            });
+            cameraInput.click();
+        }
     }
 
     resetPhotoSection() {
