@@ -499,9 +499,9 @@ class RockHunterApp {
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
-                html: `<div class="css-rock ${rock.status}"></div>`,
-                iconSize: [50, 50],
-                iconAnchor: [25, 25]
+                html: `<div class="header-rock"></div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
             })
         });
 
