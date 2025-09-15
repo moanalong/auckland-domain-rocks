@@ -25,6 +25,7 @@ class RockHunterApp {
         this.setupAdminAccess();
         this.updateUserInterface();
         this.checkForUpdates();
+        this.trackUserLocation();
     }
 
     initMap() {
@@ -465,6 +466,8 @@ class RockHunterApp {
         this.rocks.push(rock);
         this.saveRocks();
         this.addRockToMap(rock);
+        this.updateStats(); // Update statistics when adding rocks
+        this.filteredRocks = this.rocks; // Update filtered rocks
     }
 
     addRockToMap(rock) {
@@ -571,9 +574,8 @@ class RockHunterApp {
     }
 
     loadRocks() {
-        // Force clean start for team testing - clear any existing data
-        localStorage.removeItem('auckland-rocks');
-        return [];
+        const stored = localStorage.getItem('auckland-rocks');
+        return stored ? JSON.parse(stored) : [];
     }
 
     saveRocks() {
@@ -1110,6 +1112,57 @@ class RockHunterApp {
         `;
 
         document.body.appendChild(modal);
+    }
+
+    trackUserLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    // Add user location marker with different icon
+                    const userMarker = L.marker([userLat, userLng], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '<div class="user-location-icon">📍</div>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        })
+                    });
+
+                    userMarker.bindPopup('📍 You are here!').addTo(this.map);
+
+                    // Optional: Center map on user if they're close to Domain
+                    const domainLat = -36.8627;
+                    const domainLng = 174.7775;
+                    const distance = this.calculateDistance(userLat, userLng, domainLat, domainLng);
+
+                    if (distance < 2) { // Within 2km of Auckland Domain
+                        this.map.setView([userLat, userLng], 17);
+                    }
+                },
+                (error) => {
+                    console.log('GPS location error:', error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+    }
+
+    calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 }
 
