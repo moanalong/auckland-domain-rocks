@@ -1131,43 +1131,75 @@ class RockHunterApp {
     }
 
     trackUserLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLat = position.coords.latitude;
-                    const userLng = position.coords.longitude;
-
-                    // Add user location marker with different icon
-                    const userMarker = L.marker([userLat, userLng], {
-                        icon: L.divIcon({
-                            className: 'user-location-marker',
-                            html: '<div class="user-location-icon">📍</div>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        })
-                    });
-
-                    userMarker.bindPopup('📍 You are here!').addTo(this.map);
-
-                    // Optional: Center map on user if they're close to Domain
-                    const domainLat = -36.8627;
-                    const domainLng = 174.7775;
-                    const distance = this.calculateDistance(userLat, userLng, domainLat, domainLng);
-
-                    if (distance < 2) { // Within 2km of Auckland Domain
-                        this.map.setView([userLat, userLng], 17);
-                    }
-                },
-                (error) => {
-                    this.debugLog && this.debugLog(`GPS error: ${error.message}`);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
-                }
-            );
+        if (!navigator.geolocation) {
+            this.debugLog && this.debugLog('GPS not supported by browser');
+            return;
         }
+
+        this.debugLog && this.debugLog('Requesting GPS location...');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                this.debugLog && this.debugLog(`GPS found: ${userLat}, ${userLng}`);
+
+                // Add user location marker with different icon
+                const userMarker = L.marker([userLat, userLng], {
+                    icon: L.divIcon({
+                        className: 'user-location-marker',
+                        html: '<div class="user-location-icon">📍</div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                });
+
+                userMarker.bindPopup('📍 You are here!').addTo(this.map);
+
+                // Optional: Center map on user if they're close to Domain
+                const domainLat = -36.8627;
+                const domainLng = 174.7775;
+                const distance = this.calculateDistance(userLat, userLng, domainLat, domainLng);
+
+                this.debugLog && this.debugLog(`Distance to Domain: ${distance.toFixed(2)}km`);
+
+                if (distance < 2) { // Within 2km of Auckland Domain
+                    this.map.setView([userLat, userLng], 17);
+                    this.debugLog && this.debugLog('Centered map on your location');
+                }
+            },
+            (error) => {
+                let errorMsg = '';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = 'GPS permission denied. Enable in Settings > Privacy > Location Services > Safari';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = 'GPS location unavailable';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = 'GPS request timeout';
+                        break;
+                    default:
+                        errorMsg = `GPS error: ${error.message}`;
+                        break;
+                }
+                this.debugLog && this.debugLog(errorMsg);
+
+                // Show user-friendly message
+                if (error.code === error.PERMISSION_DENIED) {
+                    setTimeout(() => {
+                        alert('💡 Tip: Enable location access in Safari settings to see your position on the map!');
+                    }, 2000);
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
+        );
     }
 
     calculateDistance(lat1, lng1, lat2, lng2) {
