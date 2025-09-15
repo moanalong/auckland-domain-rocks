@@ -1632,6 +1632,32 @@ class RockHunterApp {
             debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
         };
 
+        // Add share debug button
+        const shareBtn = document.createElement('button');
+        shareBtn.innerHTML = '📋';
+        shareBtn.style.cssText = `
+            position: fixed;
+            bottom: 420px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2196F3;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        shareBtn.onclick = () => {
+            const debugText = document.getElementById('debug-content').innerText;
+            navigator.clipboard.writeText(debugText).then(() => {
+                alert('📋 Debug info copied to clipboard! Just paste it in your message.');
+            }).catch(() => {
+                // Fallback - show text in alert for manual copy
+                alert('Debug info:\n\n' + debugText.slice(-500) + '\n\n(Last 500 characters shown)');
+            });
+        };
+
         // Add reload rocks button
         const reloadBtn = document.createElement('button');
         reloadBtn.innerHTML = '🔄';
@@ -1748,6 +1774,7 @@ class RockHunterApp {
 
         document.body.appendChild(debugPanel);
         document.body.appendChild(toggleBtn);
+        document.body.appendChild(shareBtn);
         document.body.appendChild(reloadBtn);
         document.body.appendChild(migrateBtn);
         document.body.appendChild(centerBtn);
