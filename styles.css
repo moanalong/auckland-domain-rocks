@@ -1073,19 +1073,46 @@ h1::before {
 }
 
 /* Rock Status Colors */
+.css-rock.hidden {
+    background: linear-gradient(135deg,
+        #E8E8E8 0%,
+        #D3D3D3 30%,
+        #C0C0C0 70%,
+        #A9A9A9 100%);
+    opacity: 1;
+    animation: hiddenRockPulse 3s ease-in-out infinite;
+}
+
+.css-rock.hidden::before {
+    background: linear-gradient(45deg,
+        #FF6B6B 0%,
+        #FF8E8E 50%,
+        #FFA8A8 100%);
+}
+
+.css-rock.hidden::after {
+    content: '🎨';
+    font-size: 10px;
+}
+
+@keyframes hiddenRockPulse {
+    0%, 100% { transform: rotate(-15deg) scale(1); }
+    50% { transform: rotate(-15deg) scale(1.1); }
+}
+
 .css-rock.found {
-    background: linear-gradient(135deg, 
-        #E8E8E8 0%, 
-        #D3D3D3 30%, 
-        #C0C0C0 70%, 
+    background: linear-gradient(135deg,
+        #E8E8E8 0%,
+        #D3D3D3 30%,
+        #C0C0C0 70%,
         #A9A9A9 100%);
     opacity: 0.7;
 }
 
 .css-rock.found::before {
-    background: linear-gradient(45deg, 
-        #27AE60 0%, 
-        #2ECC71 50%, 
+    background: linear-gradient(45deg,
+        #27AE60 0%,
+        #2ECC71 50%,
         #58D68D 100%);
 }
 

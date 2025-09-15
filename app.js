@@ -482,6 +482,8 @@ class RockHunterApp {
     }
 
     addRockToMap(rock) {
+        this.debugLog && this.debugLog(`Creating marker for ${rock.name} at ${rock.lat}, ${rock.lng} (status: ${rock.status})`);
+
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
@@ -533,6 +535,8 @@ class RockHunterApp {
 
         marker.bindPopup(popupContent);
         marker.addTo(this.map);
+
+        this.debugLog && this.debugLog(`Marker added to map for ${rock.name}`);
     }
 
     displayRocksOnMap() {
@@ -1254,8 +1258,34 @@ class RockHunterApp {
             debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
         };
 
+        // Add reload rocks button
+        const reloadBtn = document.createElement('button');
+        reloadBtn.innerHTML = '🔄';
+        reloadBtn.style.cssText = `
+            position: fixed;
+            bottom: 220px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        reloadBtn.onclick = () => {
+            this.debugLog && this.debugLog('--- Reloading rocks from storage ---');
+            this.rocks = this.loadRocks();
+            this.filteredRocks = this.rocks;
+            this.refreshMap();
+            this.updateStats();
+            this.debugLog && this.debugLog(`Reloaded ${this.rocks.length} rocks`);
+        };
+
         document.body.appendChild(debugPanel);
         document.body.appendChild(toggleBtn);
+        document.body.appendChild(reloadBtn);
     }
 
     debugLog(message) {
