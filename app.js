@@ -368,16 +368,49 @@ class RockHunterApp {
             this.debugLog && this.debugLog('FileReader loaded successfully');
 
             try {
-                // Simple approach - use the image directly without canvas processing
-                this.currentPhoto = e.target.result;
-                this.debugLog && this.debugLog(`Photo set directly, length: ${this.currentPhoto.length} characters`);
+                // Use canvas to compress large images
+                const img = new Image();
+                img.onload = () => {
+                    this.debugLog && this.debugLog('Image loaded for compression');
 
-                // Show preview
-                const preview = document.getElementById('photo-preview');
-                preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo" style="max-width:100px;max-height:100px;object-fit:cover;">`;
-                preview.classList.remove('hidden');
+                    // Create canvas to resize image
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
 
-                this.debugLog && this.debugLog('Photo preview displayed');
+                    // Calculate new dimensions (max 600px for mobile storage)
+                    let { width, height } = img;
+                    const maxSize = 600;
+
+                    if (width > height && width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw and compress image
+                    ctx.drawImage(img, 0, 0, width, height);
+                    this.currentPhoto = canvas.toDataURL('image/jpeg', 0.6); // Lower quality for smaller size
+
+                    this.debugLog && this.debugLog(`Photo compressed, length: ${this.currentPhoto.length} characters (${Math.round(this.currentPhoto.length / 1024)}KB)`);
+
+                    // Show preview
+                    const preview = document.getElementById('photo-preview');
+                    preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo" style="max-width:100px;max-height:100px;object-fit:cover;">`;
+                    preview.classList.remove('hidden');
+
+                    this.debugLog && this.debugLog('Photo preview displayed');
+                };
+
+                img.onerror = () => {
+                    this.debugLog && this.debugLog('ERROR: Image failed to load for compression');
+                };
+
+                img.src = e.target.result;
 
             } catch (error) {
                 this.debugLog && this.debugLog(`Error processing photo: ${error.message}`);
@@ -728,8 +761,23 @@ class RockHunterApp {
 
     saveRocks() {
         this.debugLog && this.debugLog(`Saving ${this.rocks.length} rocks`);
-        localStorage.setItem('auckland-rocks', JSON.stringify(this.rocks));
-        this.debugLog && this.debugLog('Rocks saved successfully');
+
+        try {
+            const dataString = JSON.stringify(this.rocks);
+            this.debugLog && this.debugLog(`Data size: ${Math.round(dataString.length / 1024)}KB`);
+
+            localStorage.setItem('auckland-rocks', dataString);
+            this.debugLog && this.debugLog('Rocks saved successfully');
+        } catch (error) {
+            this.debugLog && this.debugLog(`ERROR saving rocks: ${error.message}`);
+
+            if (error.name === 'QuotaExceededError') {
+                alert('❌ Photo too large for storage! Try a smaller image.');
+                this.debugLog && this.debugLog('Storage quota exceeded - photo too large');
+            } else {
+                alert(`❌ Save failed: ${error.message}`);
+            }
+        }
     }
 
     markAsFound(rockId) {
