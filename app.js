@@ -1,11 +1,15 @@
 class RockHunterApp {
     constructor() {
         this.map = null;
-        this.rocks = this.loadRocks();
+        this.rocks = [];
         this.isAddingMode = false;
         this.currentPhoto = null;
         this.stream = null;
         this.pendingRockLocation = null;
+
+        // Initialize Firebase
+        this.initFirebase();
+
         this.currentFilters = {
             search: '',
             status: 'all',
@@ -20,14 +24,14 @@ class RockHunterApp {
 
         this.initMap();
         this.initEventListeners();
-        this.filteredRocks = this.rocks; // Ensure filtered rocks is initialized
-        this.displayRocksOnMap();
-        this.updateStats();
         this.setupAdminAccess();
         this.updateUserInterface();
         this.checkForUpdates();
         this.trackUserLocation();
         this.createDebugPanel();
+
+        // Load rocks from Firebase after initialization
+        this.loadRocksFromFirebase();
     }
 
     initMap() {
@@ -588,7 +592,10 @@ class RockHunterApp {
         this.debugLog && this.debugLog(`Adding rock: ${rock.name} at ${rock.lat}, ${rock.lng}`);
         this.rocks.push(rock);
         this.debugLog && this.debugLog(`Total rocks now: ${this.rocks.length}`);
-        this.saveRocks();
+
+        // Save to Firebase (with localStorage fallback)
+        this.saveRockToFirebase(rock);
+
         this.addRockToMap(rock);
         this.updateStats(); // Update statistics when adding rocks
         this.filteredRocks = this.rocks; // Update filtered rocks
@@ -756,48 +763,6 @@ class RockHunterApp {
         }).join('');
     }
 
-    loadRocks() {
-        const stored = localStorage.getItem('auckland-rocks');
-        const rocks = stored ? JSON.parse(stored) : [];
-        this.debugLog && this.debugLog(`Loading rocks: ${rocks.length} found`);
-        return rocks;
-    }
-
-    saveRocks() {
-        this.debugLog && this.debugLog(`Saving ${this.rocks.length} rocks`);
-
-        try {
-            const dataString = JSON.stringify(this.rocks);
-            this.debugLog && this.debugLog(`Data size: ${Math.round(dataString.length / 1024)}KB`);
-
-            localStorage.setItem('auckland-rocks', dataString);
-            this.debugLog && this.debugLog('Rocks saved successfully');
-        } catch (error) {
-            this.debugLog && this.debugLog(`ERROR saving rocks: ${error.message}`);
-
-            if (error.name === 'QuotaExceededError') {
-                this.debugLog && this.debugLog('Trying to save without photos...');
-
-                // Try saving without photos as emergency fallback
-                const rocksWithoutPhotos = this.rocks.map(rock => ({
-                    ...rock,
-                    photos: [],
-                    photo: null
-                }));
-
-                try {
-                    localStorage.setItem('auckland-rocks', JSON.stringify(rocksWithoutPhotos));
-                    this.debugLog && this.debugLog('Saved without photos (emergency fallback)');
-                    alert('⚠️ Photos too large! Rock saved without photo.');
-                } catch (fallbackError) {
-                    this.debugLog && this.debugLog(`Fallback also failed: ${fallbackError.message}`);
-                    alert('❌ Storage completely full! Cannot save rock.');
-                }
-            } else {
-                alert(`❌ Save failed: ${error.message}`);
-            }
-        }
-    }
 
     markAsFound(rockId) {
         const rock = this.rocks.find(r => r.id === rockId);
@@ -1427,6 +1392,205 @@ class RockHunterApp {
         return R * c;
     }
 
+    initFirebase() {
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvZoL8QHF3N-xEL_8Z5C9X0YfJ8K2_m4Y",
+            authDomain: "auckland-rocks.firebaseapp.com",
+            projectId: "auckland-rocks",
+            storageBucket: "auckland-rocks.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        try {
+            // Initialize Firebase
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+
+            this.db = firebase.firestore();
+            this.debugLog && this.debugLog('Firebase initialized successfully');
+        } catch (error) {
+            this.debugLog && this.debugLog(`Firebase initialization failed: ${error.message}`);
+            this.debugLog && this.debugLog('Using localStorage fallback');
+            this.db = null;
+        }
+    }
+
+    async loadRocksFromFirebase() {
+        if (!this.db) {
+            this.debugLog && this.debugLog('Firebase not available, loading from localStorage');
+            this.rocks = this.loadRocksLocal();
+            this.filteredRocks = this.rocks;
+            this.displayRocksOnMap();
+            this.updateStats();
+            return;
+        }
+
+        try {
+            this.debugLog && this.debugLog('Loading rocks from Firebase...');
+
+            const snapshot = await this.db.collection('rocks').get();
+            this.rocks = [];
+
+            snapshot.forEach(doc => {
+                this.rocks.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            this.debugLog && this.debugLog(`Loaded ${this.rocks.length} rocks from Firebase`);
+            this.filteredRocks = this.rocks;
+            this.displayRocksOnMap();
+            this.updateStats();
+
+            // Set up real-time listener
+            this.setupRealTimeListener();
+
+        } catch (error) {
+            this.debugLog && this.debugLog(`Error loading from Firebase: ${error.message}`);
+            this.debugLog && this.debugLog('Falling back to localStorage');
+            this.rocks = this.loadRocksLocal();
+            this.filteredRocks = this.rocks;
+            this.displayRocksOnMap();
+            this.updateStats();
+        }
+    }
+
+    setupRealTimeListener() {
+        if (!this.db) return;
+
+        this.debugLog && this.debugLog('Setting up real-time rock sync');
+
+        this.db.collection('rocks').onSnapshot((snapshot) => {
+            this.debugLog && this.debugLog('Real-time update received');
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const rockData = { id: change.doc.id, ...change.doc.data() };
+                    if (!this.rocks.find(r => r.id === rockData.id)) {
+                        this.rocks.push(rockData);
+                        this.debugLog && this.debugLog(`Added rock: ${rockData.name}`);
+                    }
+                }
+                if (change.type === 'modified') {
+                    const rockData = { id: change.doc.id, ...change.doc.data() };
+                    const index = this.rocks.findIndex(r => r.id === rockData.id);
+                    if (index !== -1) {
+                        this.rocks[index] = rockData;
+                        this.debugLog && this.debugLog(`Updated rock: ${rockData.name}`);
+                    }
+                }
+                if (change.type === 'removed') {
+                    this.rocks = this.rocks.filter(r => r.id !== change.doc.id);
+                    this.debugLog && this.debugLog(`Removed rock: ${change.doc.id}`);
+                }
+            });
+
+            this.filteredRocks = this.rocks;
+            this.refreshMap();
+            this.updateStats();
+        });
+    }
+
+    async saveRockToFirebase(rock) {
+        if (!this.db) {
+            this.debugLog && this.debugLog('Firebase not available, saving locally');
+            this.saveRocksLocal();
+            return;
+        }
+
+        try {
+            this.debugLog && this.debugLog(`Saving rock ${rock.name} to Firebase...`);
+
+            await this.db.collection('rocks').doc(rock.id).set(rock);
+
+            this.debugLog && this.debugLog(`Rock ${rock.name} saved to Firebase successfully`);
+        } catch (error) {
+            this.debugLog && this.debugLog(`Error saving to Firebase: ${error.message}`);
+            this.debugLog && this.debugLog('Falling back to localStorage');
+            this.saveRocksLocal();
+        }
+    }
+
+    loadRocksLocal() {
+        const stored = localStorage.getItem('auckland-rocks');
+        const rocks = stored ? JSON.parse(stored) : [];
+        this.debugLog && this.debugLog(`Loading rocks from localStorage: ${rocks.length} found`);
+        return rocks;
+    }
+
+    saveRocksLocal() {
+        this.debugLog && this.debugLog(`Saving ${this.rocks.length} rocks to localStorage`);
+
+        try {
+            const dataString = JSON.stringify(this.rocks);
+            this.debugLog && this.debugLog(`Data size: ${Math.round(dataString.length / 1024)}KB`);
+
+            localStorage.setItem('auckland-rocks', dataString);
+            this.debugLog && this.debugLog('Rocks saved to localStorage successfully');
+        } catch (error) {
+            this.debugLog && this.debugLog(`ERROR saving to localStorage: ${error.message}`);
+
+            if (error.name === 'QuotaExceededError') {
+                this.debugLog && this.debugLog('Trying to save without photos...');
+
+                const rocksWithoutPhotos = this.rocks.map(rock => ({
+                    ...rock,
+                    photos: [],
+                    photo: null
+                }));
+
+                try {
+                    localStorage.setItem('auckland-rocks', JSON.stringify(rocksWithoutPhotos));
+                    this.debugLog && this.debugLog('Saved without photos (emergency fallback)');
+                    alert('⚠️ Photos too large! Rock saved without photo.');
+                } catch (fallbackError) {
+                    this.debugLog && this.debugLog(`Fallback also failed: ${fallbackError.message}`);
+                    alert('❌ Storage completely full! Cannot save rock.');
+                }
+            } else {
+                alert(`❌ Save failed: ${error.message}`);
+            }
+        }
+    }
+
+    async migrateLocalRocksToCloud() {
+        if (!this.db) {
+            alert('❌ Firebase not available!');
+            return;
+        }
+
+        const localRocks = this.loadRocksLocal();
+        if (localRocks.length === 0) {
+            alert('No local rocks to migrate.');
+            return;
+        }
+
+        if (confirm(`☁️ Migrate ${localRocks.length} local rocks to cloud? This will make them visible to your team.`)) {
+            this.debugLog && this.debugLog(`Migrating ${localRocks.length} rocks to Firebase`);
+
+            try {
+                for (const rock of localRocks) {
+                    await this.saveRockToFirebase(rock);
+                    this.debugLog && this.debugLog(`Migrated: ${rock.name}`);
+                }
+
+                alert(`✅ Migrated ${localRocks.length} rocks to cloud! Your team can now see them.`);
+                this.debugLog && this.debugLog('Migration completed successfully');
+
+                // Reload from Firebase to get the latest
+                this.loadRocksFromFirebase();
+
+            } catch (error) {
+                this.debugLog && this.debugLog(`Migration error: ${error.message}`);
+                alert(`❌ Migration failed: ${error.message}`);
+            }
+        }
+    }
+
     createDebugPanel() {
         const debugPanel = document.createElement('div');
         debugPanel.id = 'debug-panel';
@@ -1485,12 +1649,28 @@ class RockHunterApp {
             z-index: 1001;
         `;
         reloadBtn.onclick = () => {
-            this.debugLog && this.debugLog('--- Reloading rocks from storage ---');
-            this.rocks = this.loadRocks();
-            this.filteredRocks = this.rocks;
-            this.refreshMap();
-            this.updateStats();
-            this.debugLog && this.debugLog(`Reloaded ${this.rocks.length} rocks`);
+            this.debugLog && this.debugLog('--- Reloading rocks from Firebase ---');
+            this.loadRocksFromFirebase();
+        };
+
+        // Add migrate button
+        const migrateBtn = document.createElement('button');
+        migrateBtn.innerHTML = '☁️';
+        migrateBtn.style.cssText = `
+            position: fixed;
+            bottom: 370px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #9c27b0;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        migrateBtn.onclick = () => {
+            this.migrateLocalRocksToCloud();
         };
 
         // Add center map button
@@ -1533,22 +1713,43 @@ class RockHunterApp {
             font-size: 16px;
             z-index: 1001;
         `;
-        clearBtn.onclick = () => {
-            if (confirm('🗑️ Delete ALL rocks? This cannot be undone!')) {
+        clearBtn.onclick = async () => {
+            if (confirm('🗑️ Delete ALL rocks from cloud? This will affect all team members!')) {
                 this.debugLog && this.debugLog('Clearing all rock data');
+
+                if (this.db) {
+                    try {
+                        // Delete from Firebase
+                        const snapshot = await this.db.collection('rocks').get();
+                        const batch = this.db.batch();
+
+                        snapshot.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+
+                        await batch.commit();
+                        this.debugLog && this.debugLog('All rocks deleted from Firebase');
+                    } catch (error) {
+                        this.debugLog && this.debugLog(`Error deleting from Firebase: ${error.message}`);
+                    }
+                }
+
+                // Also clear localStorage
                 localStorage.removeItem('auckland-rocks');
+
                 this.rocks = [];
                 this.filteredRocks = [];
                 this.refreshMap();
                 this.updateStats();
                 this.debugLog && this.debugLog('All rocks deleted successfully');
-                alert('✅ All rocks cleared! Fresh start.');
+                alert('✅ All rocks cleared from cloud! Fresh start for everyone.');
             }
         };
 
         document.body.appendChild(debugPanel);
         document.body.appendChild(toggleBtn);
         document.body.appendChild(reloadBtn);
+        document.body.appendChild(migrateBtn);
         document.body.appendChild(centerBtn);
         document.body.appendChild(clearBtn);
     }
