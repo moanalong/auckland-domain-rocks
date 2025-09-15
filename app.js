@@ -484,6 +484,18 @@ class RockHunterApp {
     addRockToMap(rock) {
         this.debugLog && this.debugLog(`Creating marker for ${rock.name} at ${rock.lat}, ${rock.lng} (status: ${rock.status})`);
 
+        // Validate coordinates
+        if (!rock.lat || !rock.lng || isNaN(rock.lat) || isNaN(rock.lng)) {
+            this.debugLog && this.debugLog(`ERROR: Invalid coordinates for ${rock.name}`);
+            return;
+        }
+
+        // Check if map exists
+        if (!this.map) {
+            this.debugLog && this.debugLog('ERROR: Map not initialized');
+            return;
+        }
+
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
@@ -534,9 +546,25 @@ class RockHunterApp {
         popupContent += `</div></div>`;
 
         marker.bindPopup(popupContent);
-        marker.addTo(this.map);
 
-        this.debugLog && this.debugLog(`Marker added to map for ${rock.name}`);
+        try {
+            marker.addTo(this.map);
+            this.debugLog && this.debugLog(`✓ Marker successfully added for ${rock.name}`);
+
+            // Check if marker is within current map bounds
+            const bounds = this.map.getBounds();
+            const markerLatLng = L.latLng(rock.lat, rock.lng);
+            const inBounds = bounds.contains(markerLatLng);
+
+            this.debugLog && this.debugLog(`Marker in view bounds: ${inBounds ? 'YES' : 'NO'}`);
+
+            if (!inBounds) {
+                this.debugLog && this.debugLog(`Marker outside bounds - lat: ${rock.lat}, lng: ${rock.lng}`);
+                this.debugLog && this.debugLog(`Map center: ${this.map.getCenter()}, zoom: ${this.map.getZoom()}`);
+            }
+        } catch (error) {
+            this.debugLog && this.debugLog(`ERROR adding marker: ${error.message}`);
+        }
     }
 
     displayRocksOnMap() {
@@ -722,14 +750,30 @@ class RockHunterApp {
     }
 
     refreshMap() {
-        // Clear existing markers
+        this.debugLog && this.debugLog('--- Refreshing map ---');
+        let markerCount = 0;
+
+        // Clear existing markers (except tile layer)
         this.map.eachLayer(layer => {
             if (layer instanceof L.Marker) {
+                markerCount++;
                 this.map.removeLayer(layer);
             }
         });
+
+        this.debugLog && this.debugLog(`Removed ${markerCount} existing markers`);
+
         // Re-add all markers
         this.displayRocksOnMap();
+
+        // Count current markers after adding
+        let currentMarkers = 0;
+        this.map.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                currentMarkers++;
+            }
+        });
+        this.debugLog && this.debugLog(`Map now has ${currentMarkers} markers`);
     }
 
     showPhotoModal(photoUrl) {
@@ -1283,9 +1327,34 @@ class RockHunterApp {
             this.debugLog && this.debugLog(`Reloaded ${this.rocks.length} rocks`);
         };
 
+        // Add center map button
+        const centerBtn = document.createElement('button');
+        centerBtn.innerHTML = '🎯';
+        centerBtn.style.cssText = `
+            position: fixed;
+            bottom: 270px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #FF9800;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        centerBtn.onclick = () => {
+            this.debugLog && this.debugLog('Centering map on Auckland Domain');
+            this.map.setView([-36.8627, 174.7775], 16);
+            setTimeout(() => {
+                this.refreshMap();
+            }, 100);
+        };
+
         document.body.appendChild(debugPanel);
         document.body.appendChild(toggleBtn);
         document.body.appendChild(reloadBtn);
+        document.body.appendChild(centerBtn);
     }
 
     debugLog(message) {
