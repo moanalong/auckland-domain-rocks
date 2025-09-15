@@ -692,31 +692,73 @@ h1::before {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     border-left: 4px solid #3498db;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .rock-item h4 {
     color: #2c3e50;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-size: 18px;
 }
 
-.rock-item p {
+.rock-item .rock-description {
     color: #666;
     font-size: 14px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.rock-photo {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.rock-photo:hover {
+    transform: scale(1.05);
+}
+
+.rock-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
 }
 
 .rock-item .coordinates {
     font-size: 12px;
     color: #999;
+    background: rgba(255,255,255,0.7);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 5px;
 }
 
-.rock-photo {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: 6px;
-    margin-top: 10px;
+.rock-status {
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.rock-status.hidden {
+    background: #ffe6e6;
+    color: #d63031;
+}
+
+.rock-status.found {
+    background: #e8f5e8;
+    color: #27ae60;
 }
 
 .hidden {

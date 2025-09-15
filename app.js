@@ -605,19 +605,34 @@ class RockHunterApp {
             return;
         }
 
-        container.innerHTML = this.rocks.map(rock => `
-            <div class="rock-item">
-                <h4>${rock.name}</h4>
-                ${rock.description ? `<p>${rock.description}</p>` : ''}
-                ${rock.photo ? `<img src="${rock.photo}" class="rock-photo" alt="${rock.name}">` : ''}
-                <div class="coordinates">
-                    📍 ${rock.lat.toFixed(6)}, ${rock.lng.toFixed(6)}
+        container.innerHTML = this.rocks.map(rock => {
+            // Get photo - check both photos array and legacy photo field
+            let photoHtml = '';
+            if (rock.photos && rock.photos.length > 0) {
+                photoHtml = `<img src="${rock.photos[0]}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photos[0]}')">`;
+            } else if (rock.photo) {
+                photoHtml = `<img src="${rock.photo}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photo}')">`;
+            }
+
+            return `
+                <div class="rock-item">
+                    <h4>${rock.name}</h4>
+                    ${rock.description ? `<p class="rock-description">${rock.description}</p>` : ''}
+                    ${photoHtml}
+                    <div class="rock-meta">
+                        <div class="coordinates">
+                            📍 ${rock.lat.toFixed(6)}, ${rock.lng.toFixed(6)}
+                        </div>
+                        <div class="coordinates">
+                            🕒 ${new Date(rock.timestamp).toLocaleString()}
+                        </div>
+                        <div class="rock-status ${rock.status}">
+                            ${rock.status === 'found' ? '✅ Found' : '🎨 Hidden'}
+                        </div>
+                    </div>
                 </div>
-                <div class="coordinates">
-                    🕒 ${new Date(rock.timestamp).toLocaleString()}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     loadRocks() {
