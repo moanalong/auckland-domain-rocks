@@ -358,42 +358,77 @@ class RockHunterApp {
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                // Create canvas to resize image if needed
-                const canvas = document.getElementById('photo-canvas');
-                const ctx = canvas.getContext('2d');
+            this.debugLog && this.debugLog('FileReader loaded successfully');
 
-                // Calculate new dimensions (max 800px width/height)
-                let { width, height } = img;
-                const maxSize = 800;
-
-                if (width > height && width > maxSize) {
-                    height = (height * maxSize) / width;
-                    width = maxSize;
-                } else if (height > maxSize) {
-                    width = (width * maxSize) / height;
-                    height = maxSize;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-
-                // Draw and compress image
-                ctx.drawImage(img, 0, 0, width, height);
-                this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
-
-                this.debugLog && this.debugLog(`Photo processed successfully, length: ${this.currentPhoto.length} characters`);
+            try {
+                // Simple approach - use the image directly without canvas processing
+                this.currentPhoto = e.target.result;
+                this.debugLog && this.debugLog(`Photo set directly, length: ${this.currentPhoto.length} characters`);
 
                 // Show preview
                 const preview = document.getElementById('photo-preview');
-                preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
+                preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo" style="max-width:100px;max-height:100px;object-fit:cover;">`;
                 preview.classList.remove('hidden');
 
                 this.debugLog && this.debugLog('Photo preview displayed');
-            };
-            img.src = e.target.result;
+
+            } catch (error) {
+                this.debugLog && this.debugLog(`Error processing photo: ${error.message}`);
+
+                // Fallback - try canvas method
+                const img = new Image();
+                img.onload = () => {
+                    this.debugLog && this.debugLog('Fallback: Image loaded, trying canvas');
+
+                    // Create canvas to resize image if needed
+                    const canvas = document.getElementById('photo-canvas');
+                    if (!canvas) {
+                        this.debugLog && this.debugLog('ERROR: photo-canvas element not found');
+                        return;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+
+                    // Calculate new dimensions (max 800px width/height)
+                    let { width, height } = img;
+                    const maxSize = 800;
+
+                    if (width > height && width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw and compress image
+                    ctx.drawImage(img, 0, 0, width, height);
+                    this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
+
+                    this.debugLog && this.debugLog(`Fallback photo processed, length: ${this.currentPhoto.length} characters`);
+
+                    // Show preview
+                    const preview = document.getElementById('photo-preview');
+                    preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
+                    preview.classList.remove('hidden');
+
+                    this.debugLog && this.debugLog('Fallback photo preview displayed');
+                };
+                img.onerror = () => {
+                    this.debugLog && this.debugLog('ERROR: Image failed to load');
+                };
+                img.src = e.target.result;
+            }
         };
+
+        reader.onerror = () => {
+            this.debugLog && this.debugLog('ERROR: FileReader failed');
+        };
+
+        this.debugLog && this.debugLog('Starting FileReader...');
         reader.readAsDataURL(file);
     }
 
