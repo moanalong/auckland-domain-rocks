@@ -141,7 +141,14 @@ class RockHunterApp {
 
         // Form submission
         document.getElementById('rock-form').addEventListener('submit', (e) => {
+            this.debugLog && this.debugLog('Rock form submitted');
             this.handleRockSubmission(e);
+        });
+
+        // Also add direct button click handler as backup
+        document.querySelector('#rock-form button[type="submit"]').addEventListener('click', (e) => {
+            this.debugLog && this.debugLog('Save Rock button clicked directly');
+            // Don't prevent default here - let it trigger form submit
         });
 
         // Search and filter event listeners
@@ -488,17 +495,24 @@ class RockHunterApp {
     }
 
     handleRockSubmission(e) {
+        this.debugLog && this.debugLog('handleRockSubmission called');
         e.preventDefault();
-        
+
         if (!this.pendingRockLocation) {
+            this.debugLog && this.debugLog('ERROR: No location selected');
             alert('No location selected');
             return;
         }
 
+        this.debugLog && this.debugLog(`Location: ${this.pendingRockLocation.lat}, ${this.pendingRockLocation.lng}`);
+
         const name = document.getElementById('rock-name').value.trim();
         const description = document.getElementById('rock-description').value.trim();
-        
+
+        this.debugLog && this.debugLog(`Name: "${name}", Description: "${description}"`);
+
         if (!name) {
+            this.debugLog && this.debugLog('ERROR: No rock name entered');
             alert('Please enter a rock name');
             return;
         }
