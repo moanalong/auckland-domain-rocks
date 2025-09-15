@@ -904,6 +904,14 @@ h1::before {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+.rock-marker.hidden {
+    background: rgba(255, 0, 0, 0.1) !important;
+    border: 2px solid red !important;
+    z-index: 1001 !important;
 }
 
 /* CSS Rock Icon */
@@ -1075,19 +1083,21 @@ h1::before {
 /* Rock Status Colors */
 .css-rock.hidden {
     background: linear-gradient(135deg,
-        #E8E8E8 0%,
-        #D3D3D3 30%,
-        #C0C0C0 70%,
-        #A9A9A9 100%);
-    opacity: 1;
+        #FF4444 0%,
+        #FF6666 30%,
+        #FF8888 70%,
+        #FFAAAA 100%) !important;
+    opacity: 1 !important;
     animation: hiddenRockPulse 3s ease-in-out infinite;
+    z-index: 1000 !important;
 }
 
 .css-rock.hidden::before {
     background: linear-gradient(45deg,
         #FF6B6B 0%,
         #FF8E8E 50%,
-        #FFA8A8 100%);
+        #FFA8A8 100%) !important;
+    opacity: 1 !important;
 }
 
 .css-rock.hidden::after {

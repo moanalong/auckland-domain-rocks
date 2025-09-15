@@ -496,12 +496,17 @@ class RockHunterApp {
             return;
         }
 
+        // Make cherry tree marker super visible for testing
+        const isCherry = rock.name.toLowerCase().includes('cherry');
+
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
-                html: `<div class="css-rock ${rock.status}"></div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+                html: isCherry ?
+                    `<div style="width:50px;height:50px;background:red;border:3px solid yellow;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">🌸</div>` :
+                    `<div class="css-rock ${rock.status}"></div>`,
+                iconSize: isCherry ? [56, 56] : [32, 32],
+                iconAnchor: isCherry ? [28, 28] : [16, 16]
             })
         });
 
