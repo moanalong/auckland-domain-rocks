@@ -576,8 +576,12 @@ class RockHunterApp {
         }
 
         this.addRock(rock);
-        this.closeAddRockModal();
-        this.toggleAddMode(); // Exit add mode after adding
+
+        // Close modal and exit add mode after a brief delay to ensure save completes
+        setTimeout(() => {
+            this.closeAddRockModal();
+            this.toggleAddMode(); // Exit add mode after adding
+        }, 100);
     }
 
     addRock(rock) {
@@ -772,8 +776,23 @@ class RockHunterApp {
             this.debugLog && this.debugLog(`ERROR saving rocks: ${error.message}`);
 
             if (error.name === 'QuotaExceededError') {
-                alert('❌ Photo too large for storage! Try a smaller image.');
-                this.debugLog && this.debugLog('Storage quota exceeded - photo too large');
+                this.debugLog && this.debugLog('Trying to save without photos...');
+
+                // Try saving without photos as emergency fallback
+                const rocksWithoutPhotos = this.rocks.map(rock => ({
+                    ...rock,
+                    photos: [],
+                    photo: null
+                }));
+
+                try {
+                    localStorage.setItem('auckland-rocks', JSON.stringify(rocksWithoutPhotos));
+                    this.debugLog && this.debugLog('Saved without photos (emergency fallback)');
+                    alert('⚠️ Photos too large! Rock saved without photo.');
+                } catch (fallbackError) {
+                    this.debugLog && this.debugLog(`Fallback also failed: ${fallbackError.message}`);
+                    alert('❌ Storage completely full! Cannot save rock.');
+                }
             } else {
                 alert(`❌ Save failed: ${error.message}`);
             }
