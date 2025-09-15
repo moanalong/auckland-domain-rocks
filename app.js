@@ -27,6 +27,7 @@ class RockHunterApp {
         this.updateUserInterface();
         this.checkForUpdates();
         this.trackUserLocation();
+        this.createDebugPanel();
     }
 
     initMap() {
@@ -470,15 +471,14 @@ class RockHunterApp {
     }
 
     addRock(rock) {
-        console.log('Adding rock:', rock.name, 'at', rock.lat, rock.lng);
+        this.debugLog && this.debugLog(`Adding rock: ${rock.name} at ${rock.lat}, ${rock.lng}`);
         this.rocks.push(rock);
-        console.log('Total rocks now:', this.rocks.length);
+        this.debugLog && this.debugLog(`Total rocks now: ${this.rocks.length}`);
         this.saveRocks();
-        console.log('Rock saved to localStorage');
         this.addRockToMap(rock);
         this.updateStats(); // Update statistics when adding rocks
         this.filteredRocks = this.rocks; // Update filtered rocks
-        console.log('Rock added to map and stats updated');
+        this.debugLog && this.debugLog('Rock added to map and stats updated');
     }
 
     addRockToMap(rock) {
@@ -536,9 +536,9 @@ class RockHunterApp {
     }
 
     displayRocksOnMap() {
-        console.log('Displaying rocks on map:', this.rocks.length, 'rocks');
+        this.debugLog && this.debugLog(`Displaying ${this.rocks.length} rocks on map`);
         this.rocks.forEach(rock => {
-            console.log('Adding rock to map:', rock.name, rock.lat, rock.lng);
+            this.debugLog && this.debugLog(`Adding ${rock.name} to map`);
             this.addRockToMap(rock);
         });
     }
@@ -591,14 +591,14 @@ class RockHunterApp {
     loadRocks() {
         const stored = localStorage.getItem('auckland-rocks');
         const rocks = stored ? JSON.parse(stored) : [];
-        console.log('Loading rocks from localStorage:', rocks.length, 'rocks found');
+        this.debugLog && this.debugLog(`Loading rocks: ${rocks.length} found`);
         return rocks;
     }
 
     saveRocks() {
-        console.log('Saving rocks to localStorage:', this.rocks.length, 'rocks');
+        this.debugLog && this.debugLog(`Saving ${this.rocks.length} rocks`);
         localStorage.setItem('auckland-rocks', JSON.stringify(this.rocks));
-        console.log('Rocks saved successfully');
+        this.debugLog && this.debugLog('Rocks saved successfully');
     }
 
     markAsFound(rockId) {
@@ -1159,7 +1159,7 @@ class RockHunterApp {
                     }
                 },
                 (error) => {
-                    console.log('GPS location error:', error.message);
+                    this.debugLog && this.debugLog(`GPS error: ${error.message}`);
                 },
                 {
                     enableHighAccuracy: true,
@@ -1179,6 +1179,61 @@ class RockHunterApp {
                   Math.sin(dLng/2) * Math.sin(dLng/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    createDebugPanel() {
+        const debugPanel = document.createElement('div');
+        debugPanel.id = 'debug-panel';
+        debugPanel.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        `;
+        debugPanel.innerHTML = '<strong>Debug Info:</strong><br><div id="debug-content"></div>';
+
+        // Add toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.innerHTML = '🐛';
+        toggleBtn.style.cssText = `
+            position: fixed;
+            bottom: 170px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        toggleBtn.onclick = () => {
+            debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+        };
+
+        document.body.appendChild(debugPanel);
+        document.body.appendChild(toggleBtn);
+    }
+
+    debugLog(message) {
+        console.log(message);
+        const debugContent = document.getElementById('debug-content');
+        if (debugContent) {
+            const time = new Date().toLocaleTimeString();
+            debugContent.innerHTML += `<br>${time}: ${message}`;
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
     }
 }
 
