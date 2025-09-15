@@ -1450,10 +1450,40 @@ class RockHunterApp {
             }, 100);
         };
 
+        // Add clear all rocks button
+        const clearBtn = document.createElement('button');
+        clearBtn.innerHTML = '🗑️';
+        clearBtn.style.cssText = `
+            position: fixed;
+            bottom: 320px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            font-size: 16px;
+            z-index: 1001;
+        `;
+        clearBtn.onclick = () => {
+            if (confirm('🗑️ Delete ALL rocks? This cannot be undone!')) {
+                this.debugLog && this.debugLog('Clearing all rock data');
+                localStorage.removeItem('auckland-rocks');
+                this.rocks = [];
+                this.filteredRocks = [];
+                this.refreshMap();
+                this.updateStats();
+                this.debugLog && this.debugLog('All rocks deleted successfully');
+                alert('✅ All rocks cleared! Fresh start.');
+            }
+        };
+
         document.body.appendChild(debugPanel);
         document.body.appendChild(toggleBtn);
         document.body.appendChild(reloadBtn);
         document.body.appendChild(centerBtn);
+        document.body.appendChild(clearBtn);
     }
 
     debugLog(message) {
