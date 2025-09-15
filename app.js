@@ -465,6 +465,11 @@ class RockHunterApp {
             foundByUserId: null
         };
 
+        this.debugLog && this.debugLog(`Rock has photo: ${this.currentPhoto ? 'YES' : 'NO'}`);
+        if (this.currentPhoto) {
+            this.debugLog && this.debugLog(`Photo length: ${this.currentPhoto.length} characters`);
+        }
+
         this.addRock(rock);
         this.closeAddRockModal();
         this.toggleAddMode(); // Exit add mode after adding
@@ -606,12 +611,19 @@ class RockHunterApp {
         }
 
         container.innerHTML = this.rocks.map(rock => {
+            // Debug photo data
+            this.debugLog && this.debugLog(`Rock ${rock.name}: photos=${rock.photos ? rock.photos.length : 'none'}, photo=${rock.photo ? 'exists' : 'none'}`);
+
             // Get photo - check both photos array and legacy photo field
             let photoHtml = '';
             if (rock.photos && rock.photos.length > 0) {
                 photoHtml = `<img src="${rock.photos[0]}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photos[0]}')">`;
+                this.debugLog && this.debugLog(`Using photos[0] for ${rock.name}`);
             } else if (rock.photo) {
                 photoHtml = `<img src="${rock.photo}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photo}')">`;
+                this.debugLog && this.debugLog(`Using photo for ${rock.name}`);
+            } else {
+                this.debugLog && this.debugLog(`No photo found for ${rock.name}`);
             }
 
             return `
