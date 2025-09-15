@@ -82,10 +82,14 @@ class RockHunterApp {
 
         // Photo source controls
         document.getElementById('camera-btn').addEventListener('click', () => {
+            this.debugLog && this.debugLog('Camera button clicked');
+
             // Try using Media Capture API first, fallback to file input
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                this.debugLog && this.debugLog('Using Media Capture API');
                 this.openCamera();
             } else {
+                this.debugLog && this.debugLog('Using file input fallback');
                 // Fallback to file input with specific camera attributes
                 const cameraInput = document.createElement('input');
                 cameraInput.type = 'file';
@@ -94,6 +98,7 @@ class RockHunterApp {
                 cameraInput.setAttribute('capture', 'camera');
                 cameraInput.style.display = 'none';
                 cameraInput.addEventListener('change', (e) => {
+                    this.debugLog && this.debugLog('Camera input file selected');
                     this.handlePhotoUpload(e);
                 });
                 document.body.appendChild(cameraInput);
@@ -107,6 +112,8 @@ class RockHunterApp {
         });
 
         document.getElementById('gallery-btn').addEventListener('click', () => {
+            this.debugLog && this.debugLog('Gallery button clicked');
+
             // Use file input with very specific gallery attributes
             const galleryInput = document.createElement('input');
             galleryInput.type = 'file';
@@ -117,6 +124,7 @@ class RockHunterApp {
             galleryInput.setAttribute('data-source', 'gallery');
 
             galleryInput.addEventListener('change', (e) => {
+                this.debugLog && this.debugLog('Gallery input file selected');
                 this.handlePhotoUpload(e);
             });
             document.body.appendChild(galleryInput);
@@ -322,20 +330,31 @@ class RockHunterApp {
     }
 
     handlePhotoUpload(event) {
+        this.debugLog && this.debugLog('handlePhotoUpload called');
+
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) {
+            this.debugLog && this.debugLog('No file selected');
+            return;
+        }
+
+        this.debugLog && this.debugLog(`File selected: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
+            this.debugLog && this.debugLog('Invalid file type');
             alert('Please select an image file');
             return;
         }
 
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
+            this.debugLog && this.debugLog('File too large');
             alert('Image file too large. Please select an image under 10MB.');
             return;
         }
+
+        this.debugLog && this.debugLog('File validation passed, processing...');
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -364,10 +383,14 @@ class RockHunterApp {
                 ctx.drawImage(img, 0, 0, width, height);
                 this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
 
+                this.debugLog && this.debugLog(`Photo processed successfully, length: ${this.currentPhoto.length} characters`);
+
                 // Show preview
                 const preview = document.getElementById('photo-preview');
                 preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
                 preview.classList.remove('hidden');
+
+                this.debugLog && this.debugLog('Photo preview displayed');
             };
             img.src = e.target.result;
         };
