@@ -20,6 +20,7 @@ class RockHunterApp {
 
         this.initMap();
         this.initEventListeners();
+        this.filteredRocks = this.rocks; // Ensure filtered rocks is initialized
         this.displayRocksOnMap();
         this.updateStats();
         this.setupAdminAccess();
@@ -38,11 +39,17 @@ class RockHunterApp {
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
 
-        // Add a marker for Auckland Domain center
-        L.marker(aucklandDomain)
+        // Add a smaller marker for Auckland Domain center
+        L.marker(aucklandDomain, {
+            icon: L.divIcon({
+                className: 'domain-center-marker',
+                html: '<div class="domain-center">🏛️</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            })
+        })
             .addTo(this.map)
-            .bindPopup('<b>Auckland Domain</b><br>Rock hunting area!')
-            .openPopup();
+            .bindPopup('<b>Auckland Domain</b><br>Rock hunting area!');
 
         // Add click event for adding rocks
         this.map.on('click', (e) => {
@@ -463,11 +470,15 @@ class RockHunterApp {
     }
 
     addRock(rock) {
+        console.log('Adding rock:', rock.name, 'at', rock.lat, rock.lng);
         this.rocks.push(rock);
+        console.log('Total rocks now:', this.rocks.length);
         this.saveRocks();
+        console.log('Rock saved to localStorage');
         this.addRockToMap(rock);
         this.updateStats(); // Update statistics when adding rocks
         this.filteredRocks = this.rocks; // Update filtered rocks
+        console.log('Rock added to map and stats updated');
     }
 
     addRockToMap(rock) {
@@ -525,7 +536,11 @@ class RockHunterApp {
     }
 
     displayRocksOnMap() {
-        this.rocks.forEach(rock => this.addRockToMap(rock));
+        console.log('Displaying rocks on map:', this.rocks.length, 'rocks');
+        this.rocks.forEach(rock => {
+            console.log('Adding rock to map:', rock.name, rock.lat, rock.lng);
+            this.addRockToMap(rock);
+        });
     }
 
     toggleRockPanel() {
@@ -575,11 +590,15 @@ class RockHunterApp {
 
     loadRocks() {
         const stored = localStorage.getItem('auckland-rocks');
-        return stored ? JSON.parse(stored) : [];
+        const rocks = stored ? JSON.parse(stored) : [];
+        console.log('Loading rocks from localStorage:', rocks.length, 'rocks found');
+        return rocks;
     }
 
     saveRocks() {
+        console.log('Saving rocks to localStorage:', this.rocks.length, 'rocks');
         localStorage.setItem('auckland-rocks', JSON.stringify(this.rocks));
+        console.log('Rocks saved successfully');
     }
 
     markAsFound(rockId) {
@@ -824,9 +843,6 @@ class RockHunterApp {
         this.filteredRocks.forEach(rock => this.addRockToMap(rock));
     }
 
-    displayRocksOnMap() {
-        this.filteredRocks.forEach(rock => this.addRockToMap(rock));
-    }
 
     // Admin function to clear all data for team testing
     clearAllRockData() {
