@@ -500,8 +500,8 @@ class RockHunterApp {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
                 html: `<div class="css-rock ${rock.status}"></div>`,
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
+                iconSize: [50, 50],
+                iconAnchor: [25, 25]
             })
         });
 
