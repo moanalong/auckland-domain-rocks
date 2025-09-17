@@ -22,9 +22,9 @@ Your app is now set up for continuous deployment! Here's your complete workflow:
    ```
 
 4. **Automatic deployment**
-   - Netlify automatically detects the push
-   - Builds and deploys your site
-   - Live site updates in 1-2 minutes
+   - GitHub Pages automatically detects the push
+   - Builds and deploys your site via GitHub Actions
+   - Live site updates in 2-3 minutes
 
 ### Quick Commands Reference
 
@@ -50,17 +50,17 @@ git remote -v
 
 ### Site Information
 
-- **Live Site**: https://cosmic-sprite-dff3d3.netlify.app/
-- **GitHub Repo**: https://github.com/YOUR_USERNAME/auckland-rock-hunter
+- **Live Site**: https://moanalong.github.io/auckland-domain-rocks/
+- **GitHub Repo**: https://github.com/moanalong/auckland-domain-rocks
 - **Local Development**: Open `index.html` in browser
 
-### Netlify Dashboard
+### GitHub Pages Dashboard
 
-Monitor deployments at: https://app.netlify.com/sites/cosmic-sprite-dff3d3/deploys
+Monitor deployments at: https://github.com/moanalong/auckland-domain-rocks/actions
 
-- View build logs
+- View build logs in Actions tab
 - See deployment status
-- Roll back to previous versions if needed
+- Access settings via Settings > Pages
 
 ### Best Practices
 
@@ -70,13 +70,13 @@ Monitor deployments at: https://app.netlify.com/sites/cosmic-sprite-dff3d3/deplo
    - ✅ "Add search functionality for rocks"
    - ❌ "fix stuff"
 
-4. **Check Netlify deploy status** after pushing
+4. **Check GitHub Actions deploy status** after pushing
 5. **Wait 1-2 minutes** for changes to appear on live site
 
 ### Troubleshooting
 
 **If deployment fails:**
-1. Check Netlify deploy logs
+1. Check GitHub Actions logs in the Actions tab
 2. Ensure all files are committed: `git status`
 3. Check for JavaScript errors in browser console
 4. Verify all image/file paths are correct
@@ -84,7 +84,7 @@ Monitor deployments at: https://app.netlify.com/sites/cosmic-sprite-dff3d3/deplo
 **If changes don't appear:**
 1. Wait a few minutes (deployments take time)
 2. Hard refresh browser (Cmd+Shift+R / Ctrl+Shift+R)
-3. Check if deploy succeeded in Netlify dashboard
+3. Check if deploy succeeded in GitHub Actions
 
 ### File Structure
 ```
