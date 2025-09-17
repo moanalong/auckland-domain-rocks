@@ -42,6 +42,14 @@ body {
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
+    /* iOS Safari specific fixes */
+    -webkit-overflow-scrolling: touch;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent zoom on form focus */
+    -webkit-text-size-adjust: 100%;
+    /* Support safe area for iPhone X+ */
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
 }
 
 /* Domain Center Marker */
@@ -398,6 +406,12 @@ h1::before {
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    /* iOS Safari button fixes */
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+    min-width: 44px;
 }
 
 .btn::before {
@@ -455,6 +469,10 @@ h1::before {
 .btn.fern {
     background: linear-gradient(135deg, var(--fern-medium) 0%, var(--lawn-green) 100%);
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+.btn.orange {
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
 }
 
 
@@ -627,12 +645,150 @@ h1::before {
     font-size: 12px;
 }
 
+.map-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.map-section h3 {
+    margin: 0 0 15px 0;
+    text-align: center;
+    color: var(--fern-dark);
+}
+
 .map-container {
     height: 500px;
     width: 100%;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow: hidden;
+    background: #f0f0f0;
+    border: 2px solid #ddd;
+    position: relative;
+    /* iOS Safari touch handling */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+}
+
+.simple-map {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.map-background {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #a8e6cf 0%, #88d8a3 50%, #7fcdcd 100%);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-grid {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 5;
+}
+
+.domain-marker {
+    font-size: 48px;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.map-label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.map-instructions {
+    font-size: 14px;
+    color: #666;
+    opacity: 0.8;
+}
+
+.map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.add-rock-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    text-align: center;
+    font-size: 16px;
+    z-index: 15;
+}
+
+.rock-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 12;
+}
+
+.rock-marker {
+    position: absolute;
+    width: 35px;
+    height: 35px;
+    background: #e74c3c;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transform: translate(-50%, -50%);
+    transition: transform 0.2s;
+}
+
+.rock-marker:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.rock-marker.found {
+    background: #4CAF50;
+}
+
+.rock-marker.hidden {
+    background: #e74c3c;
+}
+
+.map-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    z-index: 1000;
 }
 
 .panel {
@@ -800,7 +956,11 @@ h1::before {
     border: 2px solid #ddd;
     border-radius: 6px;
     margin-bottom: 15px;
-    font-size: 14px;
+    font-size: 16px;
+    /* iOS Safari input fixes */
+    -webkit-appearance: none;
+    -webkit-border-radius: 6px;
+    background-color: #fff;
 }
 
 .modal-content input:focus,
@@ -954,6 +1114,42 @@ h1::before {
     z-index: 1001 !important;
 }
 
+.rock-marker.found {
+    z-index: 1002 !important;
+}
+
+/* Found rock indicator - green square with checkmark - High specificity to override Leaflet */
+.leaflet-marker-icon.rock-marker.found .header-rock {
+    display: none !important; /* Hide the rock icon */
+}
+
+.leaflet-marker-icon.rock-marker.found::before {
+    content: '✓' !important;
+    position: absolute !important;
+    top: 4px !important;
+    left: 4px !important;
+    width: 32px !important;
+    height: 32px !important;
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%) !important;
+    color: white !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 8px rgba(76, 175, 80, 0.4) !important;
+    border: 2px solid #2e7d32 !important;
+    animation: foundPulse 2s ease-in-out !important;
+    z-index: 1000 !important;
+}
+
+@keyframes foundPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6); }
+    100% { transform: scale(1); }
+}
+
 /* CSS Rock Icon */
 .css-rock {
     width: 36px;
@@ -1093,7 +1289,11 @@ h1::before {
     padding: 12px;
     border: 2px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 16px;
+    /* iOS Safari input fixes */
+    -webkit-appearance: none;
+    -webkit-border-radius: 6px;
+    background-color: #fff;
 }
 
 #search-input:focus {
@@ -1111,8 +1311,16 @@ h1::before {
     padding: 10px;
     border: 2px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 16px;
     background: white;
+    /* iOS Safari select fixes */
+    -webkit-appearance: none;
+    -webkit-border-radius: 6px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 40px;
 }
 
 .filter-actions {
@@ -1284,23 +1492,81 @@ h1::before {
     justify-content: center;
 }
 
+/* iPhone Mobile Optimized - Primary Design */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
+    body {
+        font-size: 16px; /* Prevent zoom on input focus */
+        -webkit-text-size-adjust: 100%;
     }
-    
+
+    .container {
+        padding: 5px;
+        margin: 0;
+        /* Account for iPhone safe areas */
+        padding-left: max(5px, env(safe-area-inset-left));
+        padding-right: max(5px, env(safe-area-inset-right));
+        padding-bottom: max(5px, env(safe-area-inset-bottom));
+    }
+
     header {
         flex-direction: column;
         text-align: center;
+        padding: 15px 10px;
+        margin-bottom: 10px;
     }
-    
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+
     .controls {
         width: 100%;
-        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
     }
-    
+
+    .controls .btn {
+        width: 100%;
+        padding: 15px 20px;
+        font-size: 18px;
+        justify-content: center;
+        min-height: 50px;
+        border-radius: 25px;
+    }
+
+    /* Map optimized for iPhone screens */
+    .map-section {
+        margin: 15px 5px;
+        padding: 15px;
+    }
+
     .map-container {
-        height: 400px;
+        height: 70vh !important;
+        min-height: 500px !important;
+        max-height: none !important;
+        border-radius: 15px;
+        border: 3px solid #4CAF50;
+        background: #f8f8f8;
+    }
+
+    /* Stats panel mobile */
+    .stats-panel {
+        margin: 15px 5px;
+        padding: 20px 15px;
+    }
+
+    .stats-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 12px;
     }
     
     .modal-content {
@@ -1441,6 +1707,11 @@ h1::before {
         padding: 18px 15px;
         font-size: 18px;
         font-weight: 600;
+        /* Better touch targets for iPhone */
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .camera-section, .upload-section {
@@ -1468,4 +1739,95 @@ h1::before {
         max-height: 250px;
     }
 
+    /* iPhone specific optimizations */
+    .modal {
+        /* Better modal positioning on iPhone */
+        align-items: flex-start;
+        padding-top: env(safe-area-inset-top, 20px);
+    }
+
+    .modal-content {
+        width: 95vw;
+        max-height: 85vh;
+        margin-top: 20px;
+    }
+
+    /* iPhone camera and photo buttons */
+    .photo-source-buttons {
+        margin: 20px 0;
+    }
+
+    .photo-source-btn {
+        background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 2px 10px rgba(0, 122, 255, 0.3);
+    }
+
+    .photo-source-btn:hover, .photo-source-btn:active {
+        background: linear-gradient(135deg, #0051D5 0%, #003D99 100%);
+        transform: translateY(-1px);
+    }
+
+    /* Better input styling for iPhone */
+    input[type="text"], input[type="email"], input[type="password"], textarea {
+        border-radius: 12px;
+        border: 1px solid #D1D1D6;
+        background-color: #F2F2F7;
+        -webkit-appearance: none;
+    }
+
+    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, textarea:focus {
+        border-color: #007AFF;
+        background-color: #FFFFFF;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+}
+
+/* Additional iPhone-specific optimizations */
+/* Clickable elements get proper tap targets */
+button, .btn, [role="button"], input[type="submit"], input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* iOS-style form elements */
+@supports (-webkit-touch-callout: none) {
+    input[type="text"], input[type="email"], input[type="password"], textarea, select {
+        border-radius: 10px;
+        border: 1px solid #C6C6C8;
+        background-color: #FFFFFF;
+        font-size: 17px;
+        padding: 12px 16px;
+        -webkit-appearance: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: #007AFF;
+        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        outline: none;
+    }
+
+    .btn {
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.24px;
+    }
+}
+
+/* iPhone X+ safe area support */
+@supports (padding: max(0px)) {
+    .container {
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+    }
+
+    .modal {
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
 }

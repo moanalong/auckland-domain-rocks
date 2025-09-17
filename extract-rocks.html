@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Extract Rocks Data</title>
+</head>
+<body>
+    <h1>Extract Rock Data</h1>
+    <button onclick="extractRocks()">Extract Local Rocks</button>
+    <pre id="output"></pre>
+
+    <script>
+    function extractRocks() {
+        // Check all localStorage keys first
+        let output = 'All localStorage keys:\n';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            output += `- ${key}\n`;
+        }
+        output += '\n';
+
+        // Try the main key
+        const rocks = localStorage.getItem('auckland-rocks');
+        if (rocks) {
+            output += 'Found auckland-rocks:\n';
+            const parsed = JSON.parse(rocks);
+            output += JSON.stringify(parsed, null, 2);
+
+            // Also copy to clipboard
+            navigator.clipboard.writeText(JSON.stringify(parsed, null, 2)).then(() => {
+                alert('Rock data copied to clipboard!');
+            });
+        } else {
+            output += 'No rocks found in localStorage with key "auckland-rocks"\n';
+
+            // Try alternative keys
+            const altKeys = ['rocks', 'auckland_rocks', 'localStorage-rocks'];
+            for (const key of altKeys) {
+                const altData = localStorage.getItem(key);
+                if (altData) {
+                    output += `Found data with key "${key}":\n`;
+                    output += altData.substring(0, 200) + '...\n\n';
+                }
+            }
+        }
+
+        document.getElementById('output').textContent = output;
+    }
+    </script>
+</body>
+</html>

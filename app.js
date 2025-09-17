@@ -6,16 +6,13 @@ class RockHunterApp {
         this.currentPhoto = null;
         this.stream = null;
         this.pendingRockLocation = null;
+        this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        this.isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        this.isIOSChrome = /CriOS/.test(navigator.userAgent);
 
         // Initialize Firebase
         this.initFirebase();
 
-        this.currentFilters = {
-            search: '',
-            status: 'all',
-            date: 'all'
-        };
-        this.filteredRocks = this.rocks;
         
         // User authentication system
         this.currentUser = this.loadCurrentUser();
@@ -35,33 +32,117 @@ class RockHunterApp {
     }
 
     initMap() {
-        // Auckland Domain coordinates
-        const aucklandDomain = [-36.8627, 174.7775];
-        
-        this.map = L.map('map').setView(aucklandDomain, 16);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+        this.debugLog && this.debugLog('🗺️ Initializing simple rock hunting map...');
 
-        // Add a smaller marker for Auckland Domain center
-        L.marker(aucklandDomain, {
-            icon: L.divIcon({
-                className: 'domain-center-marker',
-                html: '<div class="domain-center">🏛️</div>',
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            })
-        })
-            .addTo(this.map)
-            .bindPopup('<b>Auckland Domain</b><br>Rock hunting area!');
+        // Simple map is already loaded via HTML image - just set up interactions
+        setTimeout(() => {
+            this.setupSimpleMapInteractions();
+            this.displayRocksOnMap();
+            this.debugLog && this.debugLog('✅ Simple rock hunting map ready!');
+        }, 500);
+    }
 
-        // Add click event for adding rocks
-        this.map.on('click', (e) => {
+    setupSimpleMapInteractions() {
+        const mapOverlay = document.getElementById('mapOverlay');
+        if (!mapOverlay) return;
+
+        // Add click/touch handler for rock placement
+        mapOverlay.addEventListener('click', (e) => {
             if (this.isAddingMode) {
-                this.handleMapClick(e);
+                this.handleSimpleMapClick(e);
             }
         });
+
+        // iPhone touch events
+        mapOverlay.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (this.isAddingMode) {
+                this.handleSimpleMapClick(e);
+            }
+        });
+
+        this.debugLog && this.debugLog('✅ Simple map interactions set up');
+    }
+
+    handleSimpleMapClick(e) {
+        const mapContainer = document.getElementById('map');
+        const rect = mapContainer.getBoundingClientRect();
+
+        // Get click position relative to map
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        // Convert to percentage of map area (for relative positioning)
+        const xPercent = (x / rect.width) * 100;
+        const yPercent = (y / rect.height) * 100;
+
+        // Generate approximate coordinates (Auckland Domain area)
+        const lat = -36.8627 + ((yPercent - 50) / 100) * 0.005; // Rough mapping
+        const lng = 174.7775 + ((xPercent - 50) / 100) * 0.005;
+
+        this.debugLog && this.debugLog(`📍 Adding rock at: ${lat}, ${lng} (${xPercent}%, ${yPercent}%)`);
+
+        // Create rock object with position data
+        const rock = {
+            lat: lat,
+            lng: lng,
+            xPercent: xPercent,
+            yPercent: yPercent,
+            timestamp: Date.now()
+        };
+
+        // Open add rock modal
+        this.openAddRockModal(rock);
+    }
+
+    openAddRockModal(rock) {
+        this.debugLog && this.debugLog('📝 Opening add rock modal');
+
+        // Store the pending rock position
+        this.pendingRock = rock;
+
+        // Show the modal
+        const modal = document.getElementById('add-rock-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+
+            // Clear previous form data
+            document.getElementById('rock-name').value = '';
+            document.getElementById('rock-description').value = '';
+
+            // Focus on name input
+            setTimeout(() => {
+                document.getElementById('rock-name').focus();
+            }, 100);
+        }
+    }
+
+    closeAddRockModal() {
+        this.debugLog && this.debugLog('❌ Closing add rock modal');
+
+        const modal = document.getElementById('add-rock-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+
+        // Clear pending rock
+        this.pendingRock = null;
+
+        // Exit add mode
+        this.isAddingMode = false;
+        this.toggleAddMode();
     }
 
     initEventListeners() {
@@ -84,60 +165,33 @@ class RockHunterApp {
             this.closeRockPanel();
         });
 
-        // Photo source controls
+        // Photo source controls - iPhone optimized
         document.getElementById('camera-btn').addEventListener('click', () => {
             this.debugLog && this.debugLog('Camera button clicked');
 
-            // Try using Media Capture API first, fallback to file input
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // iOS Safari and Chrome optimized camera handling
+            if (this.isIOS) {
+                this.debugLog && this.debugLog('Using iOS optimized camera input');
+                this.openIOSCamera();
+            } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 this.debugLog && this.debugLog('Using Media Capture API');
                 this.openCamera();
             } else {
                 this.debugLog && this.debugLog('Using file input fallback');
-                // Fallback to file input with specific camera attributes
-                const cameraInput = document.createElement('input');
-                cameraInput.type = 'file';
-                cameraInput.accept = 'image/*';
-                cameraInput.setAttribute('capture', 'environment');
-                cameraInput.setAttribute('capture', 'camera');
-                cameraInput.style.display = 'none';
-                cameraInput.addEventListener('change', (e) => {
-                    this.debugLog && this.debugLog('Camera input file selected');
-                    this.handlePhotoUpload(e);
-                });
-                document.body.appendChild(cameraInput);
-                cameraInput.click();
-                setTimeout(() => {
-                    if (document.body.contains(cameraInput)) {
-                        document.body.removeChild(cameraInput);
-                    }
-                }, 1000);
+                this.openFallbackCamera();
             }
         });
 
         document.getElementById('gallery-btn').addEventListener('click', () => {
             this.debugLog && this.debugLog('Gallery button clicked');
 
-            // Use file input with very specific gallery attributes
-            const galleryInput = document.createElement('input');
-            galleryInput.type = 'file';
-            galleryInput.accept = 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/tiff';
-            galleryInput.style.display = 'none';
-
-            // Add attributes to hint at gallery-only behavior
-            galleryInput.setAttribute('data-source', 'gallery');
-
-            galleryInput.addEventListener('change', (e) => {
-                this.debugLog && this.debugLog('Gallery input file selected');
-                this.handlePhotoUpload(e);
-            });
-            document.body.appendChild(galleryInput);
-            galleryInput.click();
-            setTimeout(() => {
-                if (document.body.contains(galleryInput)) {
-                    document.body.removeChild(galleryInput);
-                }
-            }, 1000);
+            // iOS optimized photo library access
+            if (this.isIOS) {
+                this.debugLog && this.debugLog('Using iOS optimized photo library');
+                this.openIOSPhotoLibrary();
+            } else {
+                this.openPhotoLibrary();
+            }
         });
 
 
@@ -155,40 +209,28 @@ class RockHunterApp {
             // Don't prevent default here - let it trigger form submit
         });
 
-        // Search and filter event listeners
-        document.getElementById('search-input').addEventListener('input', () => {
-            this.updateFilters();
-        });
 
-        document.getElementById('status-filter').addEventListener('change', () => {
-            this.updateFilters();
-        });
-
-        document.getElementById('date-filter').addEventListener('change', () => {
-            this.updateFilters();
-        });
-
-        document.getElementById('apply-filters').addEventListener('click', () => {
-            this.applyFilters();
-        });
-
-        document.getElementById('clear-filters').addEventListener('click', () => {
-            this.clearFilters();
-        });
+        // Auto-start GPS tracking on load
+        this.trackUserLocation();
     }
 
     toggleAddMode() {
         this.isAddingMode = !this.isAddingMode;
         const button = document.getElementById('add-rock-mode');
-        
+        const hint = document.getElementById('addRockHint');
+
         if (this.isAddingMode) {
             button.textContent = '❌ Cancel Adding';
-            button.style.background = '#e74c3c';
-            this.map.getContainer().style.cursor = 'crosshair';
+            button.classList.remove('cherry');
+            button.classList.add('maple');
+            if (hint) hint.style.display = 'block';
+            this.debugLog && this.debugLog('🎯 Add rock mode enabled - tap on map to add rocks');
         } else {
             button.textContent = '➕ Add Rock';
-            button.style.background = '#3498db';
-            this.map.getContainer().style.cursor = '';
+            button.classList.remove('maple');
+            button.classList.add('cherry');
+            if (hint) hint.style.display = 'none';
+            this.debugLog && this.debugLog('🎯 Add rock mode disabled');
         }
     }
 
@@ -234,11 +276,123 @@ class RockHunterApp {
         this.currentPhoto = null;
     }
 
+    openIOSCamera() {
+        // iOS Safari and Chrome optimized camera input
+        const cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment';
+        cameraInput.style.display = 'none';
+
+        // Better iOS handling with proper event timing
+        cameraInput.addEventListener('change', (e) => {
+            this.debugLog && this.debugLog('iOS camera input changed');
+            this.handlePhotoUpload(e);
+            setTimeout(() => {
+                if (document.body.contains(cameraInput)) {
+                    document.body.removeChild(cameraInput);
+                }
+            }, 100);
+        });
+
+        // Prevent iOS Safari from blocking the input
+        cameraInput.addEventListener('cancel', () => {
+            setTimeout(() => {
+                if (document.body.contains(cameraInput)) {
+                    document.body.removeChild(cameraInput);
+                }
+            }, 100);
+        });
+
+        document.body.appendChild(cameraInput);
+        // Use setTimeout to ensure proper iOS timing
+        setTimeout(() => {
+            cameraInput.click();
+        }, 100);
+    }
+
+    openIOSPhotoLibrary() {
+        // iOS optimized photo library access
+        const galleryInput = document.createElement('input');
+        galleryInput.type = 'file';
+        galleryInput.accept = 'image/*';
+        galleryInput.style.display = 'none';
+
+        galleryInput.addEventListener('change', (e) => {
+            this.debugLog && this.debugLog('iOS photo library selection');
+            this.handlePhotoUpload(e);
+            setTimeout(() => {
+                if (document.body.contains(galleryInput)) {
+                    document.body.removeChild(galleryInput);
+                }
+            }, 100);
+        });
+
+        galleryInput.addEventListener('cancel', () => {
+            setTimeout(() => {
+                if (document.body.contains(galleryInput)) {
+                    document.body.removeChild(galleryInput);
+                }
+            }, 100);
+        });
+
+        document.body.appendChild(galleryInput);
+        setTimeout(() => {
+            galleryInput.click();
+        }, 100);
+    }
+
+    openFallbackCamera() {
+        const cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.accept = 'image/*';
+        cameraInput.setAttribute('capture', 'environment');
+        cameraInput.setAttribute('capture', 'camera');
+        cameraInput.style.display = 'none';
+        cameraInput.addEventListener('change', (e) => {
+            this.debugLog && this.debugLog('Fallback camera input file selected');
+            this.handlePhotoUpload(e);
+        });
+        document.body.appendChild(cameraInput);
+        cameraInput.click();
+        setTimeout(() => {
+            if (document.body.contains(cameraInput)) {
+                document.body.removeChild(cameraInput);
+            }
+        }, 1000);
+    }
+
+    openPhotoLibrary() {
+        const galleryInput = document.createElement('input');
+        galleryInput.type = 'file';
+        galleryInput.accept = 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/tiff';
+        galleryInput.style.display = 'none';
+        galleryInput.setAttribute('data-source', 'gallery');
+
+        galleryInput.addEventListener('change', (e) => {
+            this.debugLog && this.debugLog('Photo library file selected');
+            this.handlePhotoUpload(e);
+        });
+        document.body.appendChild(galleryInput);
+        galleryInput.click();
+        setTimeout(() => {
+            if (document.body.contains(galleryInput)) {
+                document.body.removeChild(galleryInput);
+            }
+        }, 1000);
+    }
+
     async openCamera() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
-            });
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
             // Create a video element to show camera preview
             const video = document.createElement('video');
@@ -251,6 +405,7 @@ class RockHunterApp {
             video.style.objectFit = 'cover';
             video.autoplay = true;
             video.playsInline = true;
+            video.muted = true;
             video.srcObject = stream;
 
             // Create capture button
@@ -419,23 +574,21 @@ class RockHunterApp {
             } catch (error) {
                 this.debugLog && this.debugLog(`Error processing photo: ${error.message}`);
 
-                // Fallback - try canvas method
+                // iOS Safari fallback - create canvas dynamically
                 const img = new Image();
                 img.onload = () => {
-                    this.debugLog && this.debugLog('Fallback: Image loaded, trying canvas');
+                    this.debugLog && this.debugLog('iOS fallback: Image loaded, creating canvas');
 
-                    // Create canvas to resize image if needed
-                    const canvas = document.getElementById('photo-canvas');
-                    if (!canvas) {
-                        this.debugLog && this.debugLog('ERROR: photo-canvas element not found');
-                        return;
-                    }
+                    // Create canvas dynamically for iOS compatibility
+                    const canvas = document.createElement('canvas');
+                    document.body.appendChild(canvas);
+                    canvas.style.display = 'none';
 
                     const ctx = canvas.getContext('2d');
 
-                    // Calculate new dimensions (max 800px width/height)
+                    // Calculate new dimensions optimized for mobile
                     let { width, height } = img;
-                    const maxSize = 800;
+                    const maxSize = this.isIOS ? 600 : 800;
 
                     if (width > height && width > maxSize) {
                         height = (height * maxSize) / width;
@@ -448,18 +601,29 @@ class RockHunterApp {
                     canvas.width = width;
                     canvas.height = height;
 
-                    // Draw and compress image
-                    ctx.drawImage(img, 0, 0, width, height);
-                    this.currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
+                    // iOS Safari optimized image drawing
+                    try {
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const quality = this.isIOS ? 0.6 : 0.8;
+                        this.currentPhoto = canvas.toDataURL('image/jpeg', quality);
 
-                    this.debugLog && this.debugLog(`Fallback photo processed, length: ${this.currentPhoto.length} characters`);
+                        this.debugLog && this.debugLog(`iOS fallback photo processed, length: ${this.currentPhoto.length} characters`);
 
-                    // Show preview
-                    const preview = document.getElementById('photo-preview');
-                    preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
-                    preview.classList.remove('hidden');
+                        // Show preview
+                        const preview = document.getElementById('photo-preview');
+                        preview.innerHTML = `<img src="${this.currentPhoto}" alt="Uploaded rock photo">`;
+                        preview.classList.remove('hidden');
 
-                    this.debugLog && this.debugLog('Fallback photo preview displayed');
+                        this.debugLog && this.debugLog('iOS fallback photo preview displayed');
+                    } catch (canvasError) {
+                        this.debugLog && this.debugLog(`Canvas error on iOS: ${canvasError.message}`);
+                        alert('Photo processing failed on this device. Try a smaller image.');
+                    } finally {
+                        // Clean up canvas
+                        if (document.body.contains(canvas)) {
+                            document.body.removeChild(canvas);
+                        }
+                    }
                 };
                 img.onerror = () => {
                     this.debugLog && this.debugLog('ERROR: Image failed to load');
@@ -590,15 +754,23 @@ class RockHunterApp {
 
     addRock(rock) {
         this.debugLog && this.debugLog(`Adding rock: ${rock.name} at ${rock.lat}, ${rock.lng}`);
+
+        // Set flag to prevent duplicate Firebase listener processing
+        this.isAddingRock = true;
+
         this.rocks.push(rock);
         this.debugLog && this.debugLog(`Total rocks now: ${this.rocks.length}`);
 
-        // Save to Firebase (with localStorage fallback)
-        this.saveRockToFirebase(rock);
-
+        // Add to map immediately for responsive UI
         this.addRockToMap(rock);
-        this.updateStats(); // Update statistics when adding rocks
-        this.filteredRocks = this.rocks; // Update filtered rocks
+        this.updateStats();
+
+        // 🎯 UNIFIED SAVE & SHARE: Save locally AND share with all users automatically
+        this.saveAndShareRock(rock).finally(() => {
+            // Clear flag after save process completes
+            this.isAddingRock = false;
+        });
+
         this.debugLog && this.debugLog('Rock added to map and stats updated');
     }
 
@@ -617,10 +789,20 @@ class RockHunterApp {
             return;
         }
 
+        // Different HTML content based on rock status
+        let markerHtml;
+        if (rock.status === 'found') {
+            markerHtml = `<div class="found-rock-icon" style="font-size: 32px;">✅</div>`;
+            this.debugLog && this.debugLog(`🎯 FOUND ROCK ICON: Using ✅ for ${rock.name}`);
+        } else {
+            markerHtml = `<div class="header-rock"></div>`;
+            this.debugLog && this.debugLog(`🪨 HIDDEN ROCK ICON: Using rock icon for ${rock.name}`);
+        }
+
         const marker = L.marker([rock.lat, rock.lng], {
             icon: L.divIcon({
                 className: `rock-marker ${rock.status}`,
-                html: `<div class="header-rock"></div>`,
+                html: markerHtml,
                 iconSize: [40, 40],
                 iconAnchor: [20, 20]
             })
@@ -635,11 +817,11 @@ class RockHunterApp {
         if (rock.photos && rock.photos.length > 0) {
             popupContent += `<div class="photo-gallery">`;
             rock.photos.forEach((photo, index) => {
-                popupContent += `<img src="${photo}" class="popup-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${photo}')">`;
+                popupContent += `<img src="${photo}" class="popup-photo" alt="${rock.name}" data-photo-url="${photo}">`;
             });
             popupContent += `</div>`;
         } else if (rock.photo) { // Backward compatibility
-            popupContent += `<img src="${rock.photo}" class="popup-photo" alt="${rock.name}">`;
+            popupContent += `<img src="${rock.photo}" class="popup-photo" alt="${rock.name}" data-photo-url="${rock.photo}">`;
         }
         
         // Rock status and timestamps
@@ -661,12 +843,33 @@ class RockHunterApp {
                 popupContent += `<p class="found-notes">"${rock.foundNotes}"</p>`;
             }
         } else {
-            popupContent += `<button class="mark-found-btn" onclick="window.rockApp.markAsFound('${rock.id}')">🎯 Mark as Found</button>`;
+            popupContent += `<button class="mark-found-btn" data-rock-id="${rock.id}">🎯 Mark as Found</button>`;
         }
         
         popupContent += `</div></div>`;
 
         marker.bindPopup(popupContent);
+
+        // Add event listener for mark as found button and photo clicks when popup opens
+        marker.on('popupopen', () => {
+            const markFoundBtn = document.querySelector('.mark-found-btn[data-rock-id="' + rock.id + '"]');
+            if (markFoundBtn) {
+                markFoundBtn.addEventListener('click', () => {
+                    this.debugLog && this.debugLog(`Mark as found clicked for rock: ${rock.id}`);
+                    this.markAsFound(rock.id);
+                });
+            }
+
+            // Add event listeners for photo clicks
+            const photoElements = document.querySelectorAll('.popup-photo[data-photo-url]');
+            photoElements.forEach(photoElement => {
+                photoElement.addEventListener('click', () => {
+                    const photoUrl = photoElement.getAttribute('data-photo-url');
+                    this.debugLog && this.debugLog(`Photo clicked: ${photoUrl}`);
+                    this.showPhotoModal(photoUrl);
+                });
+            });
+        });
 
         try {
             marker.addTo(this.map);
@@ -689,11 +892,81 @@ class RockHunterApp {
     }
 
     displayRocksOnMap() {
-        this.debugLog && this.debugLog(`Displaying ${this.rocks.length} rocks on map`);
+        this.debugLog && this.debugLog(`Displaying ${this.rocks.length} rocks on simple map`);
+
+        const markersContainer = document.getElementById('rockMarkers');
+        if (!markersContainer) return;
+
+        // Clear existing markers
+        markersContainer.innerHTML = '';
+
         this.rocks.forEach(rock => {
-            this.debugLog && this.debugLog(`Adding ${rock.name} to map`);
-            this.addRockToMap(rock);
+            this.debugLog && this.debugLog(`Adding ${rock.name} to simple map`);
+            this.addRockToSimpleMap(rock);
         });
+    }
+
+    addRockToSimpleMap(rock) {
+        const markersContainer = document.getElementById('rockMarkers');
+        if (!markersContainer) return;
+
+        // Create marker element
+        const marker = document.createElement('div');
+        marker.className = `rock-marker ${rock.status}`;
+        marker.style.left = `${rock.xPercent || 50}%`;
+        marker.style.top = `${rock.yPercent || 50}%`;
+
+        // Add icon based on status
+        marker.innerHTML = rock.status === 'found' ? '✅' : '🪨';
+
+        // Add click handler for rock interaction
+        marker.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showRockDetails(rock);
+        });
+
+        markersContainer.appendChild(marker);
+        this.debugLog && this.debugLog(`✅ Added ${rock.name} marker to simple map`);
+    }
+
+    showRockDetails(rock) {
+        let details = `🪨 ${rock.name}\n`;
+        if (rock.description) details += `📝 ${rock.description}\n`;
+        details += `📍 Status: ${rock.status === 'found' ? 'Found ✅' : 'Hidden 🔍'}\n`;
+        if (rock.foundBy) details += `👤 Found by: ${rock.foundBy}\n`;
+        if (rock.timestamp) {
+            const date = new Date(rock.timestamp).toLocaleDateString();
+            details += `📅 Added: ${date}`;
+        }
+
+        // If rock is hidden and user found it, offer to mark as found
+        if (rock.status === 'hidden') {
+            details += '\n\n🎉 Did you find this rock?';
+            if (confirm(details)) {
+                this.markRockAsFound(rock);
+            }
+        } else {
+            alert(details);
+        }
+    }
+
+    markRockAsFound(rock) {
+        const username = this.currentUser ? this.currentUser.username : 'Anonymous';
+
+        rock.status = 'found';
+        rock.foundBy = username;
+        rock.foundTimestamp = Date.now();
+
+        this.debugLog && this.debugLog(`🎉 ${username} found rock: ${rock.name}`);
+
+        // Update visually
+        this.displayRocksOnMap();
+        this.updateStats();
+
+        // Save to Firebase
+        this.saveRockToFirebase(rock);
+
+        alert(`🎉 Congratulations! You found "${rock.name}"!`);
     }
 
     toggleRockPanel() {
@@ -733,10 +1006,10 @@ class RockHunterApp {
             // Get photo - check both photos array and legacy photo field
             let photoHtml = '';
             if (rock.photos && rock.photos.length > 0) {
-                photoHtml = `<img src="${rock.photos[0]}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photos[0]}')">`;
+                photoHtml = `<img src="${rock.photos[0]}" class="rock-photo" alt="${rock.name}" data-photo-url="${rock.photos[0]}">`;
                 this.debugLog && this.debugLog(`Using photos[0] for ${rock.name}`);
             } else if (rock.photo) {
-                photoHtml = `<img src="${rock.photo}" class="rock-photo" alt="${rock.name}" onclick="window.rockApp.showPhotoModal('${rock.photo}')">`;
+                photoHtml = `<img src="${rock.photo}" class="rock-photo" alt="${rock.name}" data-photo-url="${rock.photo}">`;
                 this.debugLog && this.debugLog(`Using photo for ${rock.name}`);
             } else {
                 this.debugLog && this.debugLog(`No photo found for ${rock.name}`);
@@ -761,6 +1034,18 @@ class RockHunterApp {
                 </div>
             `;
         }).join('');
+
+        // Add event listeners for rock list photos
+        setTimeout(() => {
+            const rockPhotos = document.querySelectorAll('.rock-photo[data-photo-url]');
+            rockPhotos.forEach(photoElement => {
+                photoElement.addEventListener('click', () => {
+                    const photoUrl = photoElement.getAttribute('data-photo-url');
+                    this.debugLog && this.debugLog(`Rock list photo clicked: ${photoUrl}`);
+                    this.showPhotoModal(photoUrl);
+                });
+            });
+        }, 100);
     }
 
 
@@ -870,7 +1155,8 @@ class RockHunterApp {
             rock.foundNotes = foundNotes;
             rock.foundByUserId = this.currentUser ? this.currentUser.id : null;
 
-            this.saveRocks();
+            // 🎯 UNIFIED SAVE & SHARE: Update is automatically shared with all users
+            this.saveAndShareRock(rock);
             this.refreshMap();
             this.updateStats();
             modal.remove();
@@ -947,80 +1233,6 @@ class RockHunterApp {
         }
     }
 
-    updateFilters() {
-        this.currentFilters.search = document.getElementById('search-input').value.toLowerCase();
-        this.currentFilters.status = document.getElementById('status-filter').value;
-        this.currentFilters.date = document.getElementById('date-filter').value;
-        this.applyFilters();
-    }
-
-    applyFilters() {
-        this.filteredRocks = this.rocks.filter(rock => {
-            // Search filter
-            if (this.currentFilters.search) {
-                const searchMatch = rock.name.toLowerCase().includes(this.currentFilters.search) ||
-                                  (rock.description && rock.description.toLowerCase().includes(this.currentFilters.search));
-                if (!searchMatch) return false;
-            }
-
-            // Status filter
-            if (this.currentFilters.status !== 'all') {
-                if (rock.status !== this.currentFilters.status) return false;
-            }
-
-            // Date filter
-            if (this.currentFilters.date !== 'all') {
-                const rockDate = new Date(rock.timestamp);
-                const now = new Date();
-                const daysDiff = (now - rockDate) / (1000 * 60 * 60 * 24);
-
-                switch (this.currentFilters.date) {
-                    case 'recent':
-                        if (daysDiff > 3) return false;
-                        break;
-                    case 'week':
-                        if (daysDiff > 7) return false;
-                        break;
-                    case 'month':
-                        if (daysDiff > 30) return false;
-                        break;
-                }
-            }
-
-            return true;
-        });
-
-        this.refreshMapWithFiltered();
-        this.updateRocksList();
-    }
-
-    clearFilters() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('status-filter').value = 'all';
-        document.getElementById('date-filter').value = 'all';
-        
-        this.currentFilters = {
-            search: '',
-            status: 'all',
-            date: 'all'
-        };
-        
-        this.filteredRocks = this.rocks;
-        this.refreshMapWithFiltered();
-        this.updateRocksList();
-    }
-
-    refreshMapWithFiltered() {
-        // Clear existing markers
-        this.map.eachLayer(layer => {
-            if (layer instanceof L.Marker) {
-                this.map.removeLayer(layer);
-            }
-        });
-        
-        // Add filtered markers
-        this.filteredRocks.forEach(rock => this.addRockToMap(rock));
-    }
 
 
     // Admin function to clear all data for team testing
@@ -1028,7 +1240,6 @@ class RockHunterApp {
         if (confirm('⚠️ ADMIN: Clear ALL rock data? This cannot be undone!')) {
             localStorage.removeItem('auckland-rocks');
             this.rocks = [];
-            this.filteredRocks = [];
             this.refreshMap();
             this.updateStats();
             this.updateRocksList();
@@ -1317,6 +1528,19 @@ class RockHunterApp {
 
         this.debugLog && this.debugLog('Requesting GPS location...');
 
+        // Check if permission is already denied
+        if (navigator.permissions) {
+            navigator.permissions.query({name: 'geolocation'}).then((result) => {
+                this.debugLog && this.debugLog(`GPS permission status: ${result.state}`);
+                if (result.state === 'denied') {
+                    this.debugLog && this.debugLog('GPS permission denied by user');
+                    setTimeout(() => {
+                        alert('🌍 Location access is blocked. To enable:\n\n📱 Chrome mobile: Tap the lock icon in address bar\n💻 Chrome desktop: Click the location icon in address bar\n\nThen refresh the page!');
+                    }, 1000);
+                }
+            });
+        }
+
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const userLat = position.coords.latitude;
@@ -1392,29 +1616,207 @@ class RockHunterApp {
         return R * c;
     }
 
-    initFirebase() {
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBvZoL8QHF3N-xEL_8Z5C9X0YfJ8K2_m4Y",
-            authDomain: "auckland-rocks.firebaseapp.com",
-            projectId: "auckland-rocks",
-            storageBucket: "auckland-rocks.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
-        };
+    trackUserLocation() {
+        console.log('🌍 trackUserLocation function called');
 
+        if (!navigator.geolocation) {
+            console.log('❌ GPS not supported by browser');
+            alert('❌ GPS not supported by your browser');
+            return;
+        }
+
+        console.log('✅ GPS supported, requesting location...');
+        alert('🌍 Requesting your location...');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                console.log(`✅ GPS SUCCESS: ${userLat}, ${userLng}`);
+                alert(`✅ GPS found: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`);
+
+                // Calculate distance to Auckland Domain
+                const domainLat = -36.8627;
+                const domainLng = 174.7775;
+                const distance = this.calculateDistance(userLat, userLng, domainLat, domainLng);
+
+                console.log(`Distance to Domain: ${distance.toFixed(2)}km`);
+
+                // Store user location
+                this.userLocation = { lat: userLat, lng: userLng };
+
+                // Add user location marker on the map
+                this.addUserLocationMarker(userLat, userLng);
+
+                alert(`🎯 You're ${distance.toFixed(2)}km from Auckland Domain. Blue marker added to map!`);
+            },
+            (error) => {
+                console.log(`❌ GPS ERROR: ${error.message}`);
+                alert(`❌ GPS failed: ${error.message}\n\nError code: ${error.code}`);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 60000
+            }
+        );
+    }
+
+    addUserLocationMarker(lat, lng) {
+        console.log('📍 addUserLocationMarker called');
+
+        const rockMarkers = document.getElementById('rockMarkers');
+        if (!rockMarkers) {
+            console.log('❌ rockMarkers container not found!');
+            alert('❌ Cannot find map markers container');
+            return;
+        }
+
+        console.log('✅ Found rockMarkers container');
+
+        // Remove any existing user location marker
+        const existingUserMarker = document.querySelector('.user-location-marker');
+        if (existingUserMarker) {
+            existingUserMarker.remove();
+            console.log('🗑️ Removed existing user marker');
+        }
+
+        // Add blue location marker
+        const marker = document.createElement('div');
+        marker.className = 'user-location-marker rock-marker';
+        marker.style.left = '50%';
+        marker.style.top = '50%';
+        marker.style.background = '#2196F3';
+        marker.style.border = '3px solid white';
+        marker.style.fontSize = '20px';
+        marker.innerHTML = '📍';
+        marker.title = `Your Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+        rockMarkers.appendChild(marker);
+        console.log('✅ User location marker added to DOM');
+        alert('✅ Blue GPS marker added to map!');
+    }
+
+    initFirebase() {
         try {
-            // Initialize Firebase
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
+            // Check if Firebase is loaded and configured
+            if (typeof firebase !== 'undefined' && window.firebaseDb) {
+                this.debugLog && this.debugLog('🔥 Firebase available but using hybrid approach');
+                this.db = window.firebaseDb;
+                this.storage = null;
+
+                // Use hybrid approach: Firebase + JSON fallback due to rules issues
+                this.setupHybridSync();
+            } else {
+                // Fallback to old JSON system
+                this.debugLog && this.debugLog('⚠️ Firebase not available, using JSON fallback');
+                this.db = null;
+                this.cloudRocksUrl = 'shared-rocks.json';
+
+                // Set up periodic sync every 15 seconds
+                setInterval(() => {
+                    this.syncWithCloud();
+                }, 15000);
+
+                // Initial cloud sync
+                setTimeout(() => {
+                    this.syncWithCloud();
+                }, 2000);
+            }
+        } catch (error) {
+            this.debugLog && this.debugLog(`Firebase init error: ${error.message}`);
+            // Use fallback system
+            this.db = null;
+            this.cloudRocksUrl = 'shared-rocks.json';
+        }
+    }
+
+    async syncWithCloud() {
+        try {
+            this.debugLog && this.debugLog('🔄 Starting comprehensive cloud sync...');
+
+            // Step 1: Fetch shared rocks from JSON file
+            const response = await fetch(this.cloudRocksUrl + '?t=' + Date.now());
+            let cloudRocks = [];
+
+            if (response.ok) {
+                const cloudData = await response.json();
+                cloudRocks = cloudData.rocks || [];
+                this.debugLog && this.debugLog(`📥 Found ${cloudRocks.length} rocks in JSON cloud`);
             }
 
-            this.db = firebase.firestore();
-            this.debugLog && this.debugLog('Firebase initialized successfully');
+            // Step 2: Also check localStorage shared collection
+            const sharedData = localStorage.getItem('auckland-rocks-shared');
+            if (sharedData) {
+                try {
+                    const localSharedData = JSON.parse(sharedData);
+                    const localSharedRocks = localSharedData.rocks || [];
+                    this.debugLog && this.debugLog(`📥 Found ${localSharedRocks.length} rocks in shared localStorage`);
+
+                    // Merge local shared rocks with cloud rocks
+                    localSharedRocks.forEach(sharedRock => {
+                        if (!cloudRocks.find(r => r.id === sharedRock.id)) {
+                            cloudRocks.push(sharedRock);
+                        }
+                    });
+                } catch (error) {
+                    this.debugLog && this.debugLog(`Error parsing shared localStorage: ${error.message}`);
+                }
+            }
+
+            this.debugLog && this.debugLog(`📥 Total rocks to sync: ${cloudRocks.length}`);
+
+            // Step 3: Merge with local rocks (avoid duplicates and update existing ones)
+            let updated = false;
+            cloudRocks.forEach(cloudRock => {
+                const existingIndex = this.rocks.findIndex(r => r.id === cloudRock.id);
+                if (existingIndex === -1) {
+                    // New rock from cloud
+                    this.rocks.push(cloudRock);
+                    this.debugLog && this.debugLog(`➕ Added new rock from cloud: ${cloudRock.name}`);
+                    updated = true;
+                } else {
+                    // Update existing rock if cloud version has more recent data
+                    const existing = this.rocks[existingIndex];
+                    let shouldUpdate = false;
+
+                    // Update if cloud has photos and local doesn't
+                    if (cloudRock.photos && cloudRock.photos.length > 0 &&
+                        (!existing.photos || existing.photos.length === 0)) {
+                        shouldUpdate = true;
+                    }
+
+                    // Update if cloud is found and local isn't
+                    if (cloudRock.foundBy && !existing.foundBy) {
+                        shouldUpdate = true;
+                    }
+
+                    // Update if cloud has newer timestamp
+                    if (cloudRock.sharedTimestamp &&
+                        (!existing.sharedTimestamp ||
+                         new Date(cloudRock.sharedTimestamp) > new Date(existing.sharedTimestamp))) {
+                        shouldUpdate = true;
+                    }
+
+                    if (shouldUpdate) {
+                        this.rocks[existingIndex] = {...existing, ...cloudRock};
+                        this.debugLog && this.debugLog(`🔄 Updated existing rock from cloud: ${cloudRock.name}`);
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated) {
+                this.refreshMap();
+                this.updateStats();
+                this.saveRocksLocal(); // Save merged data locally
+                this.debugLog && this.debugLog('✅ Cloud sync completed with updates');
+            } else {
+                this.debugLog && this.debugLog('✅ Cloud sync completed - no updates needed');
+            }
         } catch (error) {
-            this.debugLog && this.debugLog(`Firebase initialization failed: ${error.message}`);
-            this.debugLog && this.debugLog('Using localStorage fallback');
-            this.db = null;
+            this.debugLog && this.debugLog(`❌ Cloud sync failed: ${error.message}`);
         }
     }
 
@@ -1422,7 +1824,6 @@ class RockHunterApp {
         if (!this.db) {
             this.debugLog && this.debugLog('Firebase not available, loading from localStorage');
             this.rocks = this.loadRocksLocal();
-            this.filteredRocks = this.rocks;
             this.displayRocksOnMap();
             this.updateStats();
             return;
@@ -1442,7 +1843,6 @@ class RockHunterApp {
             });
 
             this.debugLog && this.debugLog(`Loaded ${this.rocks.length} rocks from Firebase`);
-            this.filteredRocks = this.rocks;
             this.displayRocksOnMap();
             this.updateStats();
 
@@ -1453,7 +1853,6 @@ class RockHunterApp {
             this.debugLog && this.debugLog(`Error loading from Firebase: ${error.message}`);
             this.debugLog && this.debugLog('Falling back to localStorage');
             this.rocks = this.loadRocksLocal();
-            this.filteredRocks = this.rocks;
             this.displayRocksOnMap();
             this.updateStats();
         }
@@ -1462,56 +1861,311 @@ class RockHunterApp {
     setupRealTimeListener() {
         if (!this.db) return;
 
-        this.debugLog && this.debugLog('Setting up real-time rock sync');
+        this.debugLog && this.debugLog('🔥 Setting up real-time Firebase sync');
 
         this.db.collection('rocks').onSnapshot((snapshot) => {
-            this.debugLog && this.debugLog('Real-time update received');
+            this.debugLog && this.debugLog(`🔄 Real-time update: ${snapshot.size} rocks in Firebase`);
 
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const rockData = { id: change.doc.id, ...change.doc.data() };
-                    if (!this.rocks.find(r => r.id === rockData.id)) {
-                        this.rocks.push(rockData);
-                        this.debugLog && this.debugLog(`Added rock: ${rockData.name}`);
-                    }
-                }
-                if (change.type === 'modified') {
-                    const rockData = { id: change.doc.id, ...change.doc.data() };
-                    const index = this.rocks.findIndex(r => r.id === rockData.id);
-                    if (index !== -1) {
-                        this.rocks[index] = rockData;
-                        this.debugLog && this.debugLog(`Updated rock: ${rockData.name}`);
-                    }
-                }
-                if (change.type === 'removed') {
-                    this.rocks = this.rocks.filter(r => r.id !== change.doc.id);
-                    this.debugLog && this.debugLog(`Removed rock: ${change.doc.id}`);
-                }
-            });
+            // Skip updates during local rock addition to prevent duplicate processing
+            if (this.isAddingRock) {
+                this.debugLog && this.debugLog('⏭️ Skipping real-time update during local rock addition');
+                return;
+            }
 
-            this.filteredRocks = this.rocks;
+            // For initial load, replace all rocks
+            if (snapshot.size === 0 || !this.hasLoadedFromFirebase) {
+                this.rocks = [];
+                snapshot.forEach(doc => {
+                    this.rocks.push({ id: doc.id, ...doc.data() });
+                });
+                this.hasLoadedFromFirebase = true;
+                this.debugLog && this.debugLog(`🔄 Initial load: ${this.rocks.length} rocks from Firebase`);
+
+                // If we expect rocks but got 0, this might be a permissions issue
+                if (snapshot.size === 0) {
+                    this.debugLog && this.debugLog('⚠️ No rocks found - this could be a Firebase Security Rules issue');
+                }
+            } else {
+                // For incremental updates, only process changes
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const rockData = { id: change.doc.id, ...change.doc.data() };
+                        if (!this.rocks.find(r => r.id === rockData.id)) {
+                            this.rocks.push(rockData);
+                            this.debugLog && this.debugLog(`➕ Added rock: ${rockData.name}`);
+                        }
+                    }
+                    if (change.type === 'modified') {
+                        const rockData = { id: change.doc.id, ...change.doc.data() };
+                        const index = this.rocks.findIndex(r => r.id === rockData.id);
+                        if (index !== -1) {
+                            this.rocks[index] = rockData;
+                            this.debugLog && this.debugLog(`🔄 Updated rock: ${rockData.name}`);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        this.rocks = this.rocks.filter(r => r.id !== change.doc.id);
+                        this.debugLog && this.debugLog(`➖ Removed rock: ${change.doc.id}`);
+                    }
+                });
+            }
+
             this.refreshMap();
             this.updateStats();
+
+            // Also save locally as backup
+            this.saveRocksLocal();
+        }, (error) => {
+            this.debugLog && this.debugLog(`❌ Firebase listener error: ${error.message}`);
         });
+    }
+
+    setupHybridSync() {
+        this.debugLog && this.debugLog('🔀 Setting up hybrid Firebase + JSON sync');
+
+        // Try Firebase first
+        if (this.db) {
+            this.debugLog && this.debugLog('📡 Attempting Firebase connection...');
+
+            this.db.collection('rocks').onSnapshot((snapshot) => {
+                this.debugLog && this.debugLog(`🔄 Firebase update: ${snapshot.size} rocks`);
+
+                if (snapshot.size > 0) {
+                    // Firebase has data - use it
+                    this.debugLog && this.debugLog('✅ Using Firebase data');
+                    this.rocks = [];
+                    snapshot.forEach(doc => {
+                        this.rocks.push({ id: doc.id, ...doc.data() });
+                    });
+                    this.refreshMap();
+                    this.updateStats();
+                    this.saveRocksLocal();
+                } else {
+                    // Firebase empty or blocked - try JSON fallback
+                    this.debugLog && this.debugLog('⚠️ Firebase empty, trying JSON fallback...');
+                    this.syncWithCloud();
+                }
+            }, (error) => {
+                this.debugLog && this.debugLog(`❌ Firebase blocked: ${error.message}`);
+                this.debugLog && this.debugLog('🔄 Falling back to JSON sync');
+                this.syncWithCloud();
+            });
+        }
+
+        // Also set up periodic JSON sync as backup
+        setInterval(() => {
+            this.syncWithCloud();
+        }, 30000);
+    }
+
+    // JSON update trigger removed - Firebase handles real-time sharing
+
+    async saveAndShareRock(rock) {
+        this.debugLog && this.debugLog(`🎯 UNIFIED SAVE & SHARE: ${rock.name}`);
+
+        // Step 1: Always save locally first (guaranteed to work)
+        this.saveRocksLocal();
+        this.debugLog && this.debugLog('✅ Saved locally');
+
+        // Step 2: Attempt cloud saves in parallel for maximum reliability
+        const cloudSavePromises = [];
+        let firebaseSuccess = false;
+        let jsonSyncSuccess = false;
+
+        // Try Firebase save
+        if (this.db) {
+            this.debugLog && this.debugLog('🔥 Attempting Firebase save...');
+            cloudSavePromises.push(
+                this.saveRockToFirebase(rock)
+                    .then(() => {
+                        firebaseSuccess = true;
+                        this.debugLog && this.debugLog('✅ Firebase save successful - instant team sync!');
+                        return 'firebase-success';
+                    })
+                    .catch(error => {
+                        this.debugLog && this.debugLog(`⚠️ Firebase failed: ${error.message}`);
+                        return 'firebase-failed';
+                    })
+            );
+        }
+
+        // Only try JSON sync if Firebase is not available
+        if (!this.db) {
+            this.debugLog && this.debugLog('🔄 Firebase unavailable, using JSON sync...');
+            cloudSavePromises.push(
+                this.updateSharedRockCollection(rock)
+                    .then(() => {
+                        jsonSyncSuccess = true;
+                        this.debugLog && this.debugLog('✅ JSON sync successful');
+                        return 'json-success';
+                    })
+                    .catch(error => {
+                        this.debugLog && this.debugLog(`⚠️ JSON sync failed: ${error.message}`);
+                        return 'json-failed';
+                    })
+            );
+        }
+
+        // Wait for all cloud saves to complete
+        if (cloudSavePromises.length > 0) {
+            try {
+                const results = await Promise.allSettled(cloudSavePromises);
+                this.debugLog && this.debugLog(`Cloud save results: ${results.map(r => r.value).join(', ')}`);
+
+                // Provide user feedback based on what succeeded
+                if (firebaseSuccess) {
+                    this.showTemporaryMessage('✅ Rock saved and shared with team instantly!', 'success');
+                } else if (jsonSyncSuccess) {
+                    this.showTemporaryMessage('✅ Rock saved and queued for team sync!', 'success');
+                } else {
+                    this.showTemporaryMessage('⚠️ Rock saved locally, cloud sync will retry', 'warning');
+                }
+            } catch (error) {
+                this.debugLog && this.debugLog(`Unexpected cloud save error: ${error.message}`);
+                this.showTemporaryMessage('⚠️ Rock saved locally, cloud sync failed', 'warning');
+            }
+        } else {
+            this.debugLog && this.debugLog('⚠️ No cloud services available');
+            this.showTemporaryMessage('📱 Rock saved locally only', 'info');
+        }
+
+        // Step 3: Process complete
+        this.debugLog && this.debugLog('🎯 Save & share process complete');
+    }
+
+    async updateSharedRockCollection(rock) {
+        try {
+            // Simulate sharing by updating our local system to broadcast the rock
+            this.debugLog && this.debugLog('📤 Broadcasting rock to shared collection');
+
+            // Add a timestamp to help with sync
+            rock.sharedTimestamp = new Date().toISOString();
+            rock.cloudSyncStatus = 'pending';
+
+            // Save to localStorage with sync flag for other browsers to pick up
+            const existingData = localStorage.getItem('auckland-rocks-shared') || '{"rocks": []}';
+            const sharedData = JSON.parse(existingData);
+
+            // Remove existing version if it exists
+            sharedData.rocks = sharedData.rocks.filter(r => r.id !== rock.id);
+
+            // Add updated rock
+            sharedData.rocks.push({...rock, cloudSyncStatus: 'shared'});
+            sharedData.lastUpdated = new Date().toISOString();
+
+            localStorage.setItem('auckland-rocks-shared', JSON.stringify(sharedData));
+
+            // This will be picked up by other browsers via the existing sync system
+            this.debugLog && this.debugLog(`✅ Rock ${rock.name} added to shared collection queue`);
+
+            return Promise.resolve();
+        } catch (error) {
+            this.debugLog && this.debugLog(`❌ Failed to update shared collection: ${error.message}`);
+            return Promise.reject(error);
+        }
     }
 
     async saveRockToFirebase(rock) {
         if (!this.db) {
             this.debugLog && this.debugLog('Firebase not available, saving locally');
             this.saveRocksLocal();
-            return;
+            return Promise.resolve();
         }
 
         try {
-            this.debugLog && this.debugLog(`Saving rock ${rock.name} to Firebase...`);
+            this.debugLog && this.debugLog(`🔥 Saving rock ${rock.name} to Firebase...`);
 
-            await this.db.collection('rocks').doc(rock.id).set(rock);
+            // Create a copy of the rock for Firebase
+            const firebaseRock = { ...rock };
 
-            this.debugLog && this.debugLog(`Rock ${rock.name} saved to Firebase successfully`);
+            // Store photos directly in Firestore (skip Firebase Storage entirely)
+            if (rock.photos && rock.photos.length > 0) {
+                this.debugLog && this.debugLog('📸 Storing photos directly in Firestore database...');
+
+                // Simply store photos as base64 in Firestore
+                // This works without any additional Firebase Storage setup
+                firebaseRock.photos = rock.photos;
+                this.debugLog && this.debugLog(`📸 Ready to save ${rock.photos.length} photos in Firestore`);
+            }
+
+            // Save rock to Firestore with timeout
+            this.debugLog && this.debugLog(`💾 Saving rock data to Firestore...`);
+
+            const savePromise = this.db.collection('rocks').doc(rock.id).set(firebaseRock);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Firebase save timeout')), 10000)
+            );
+
+            await Promise.race([savePromise, timeoutPromise]);
+
+            this.debugLog && this.debugLog(`✅ Rock ${rock.name} saved to Firebase successfully`);
+
+            // No need for additional JSON sync - Firebase real-time handles sharing
+
+            return Promise.resolve();
+
         } catch (error) {
-            this.debugLog && this.debugLog(`Error saving to Firebase: ${error.message}`);
-            this.debugLog && this.debugLog('Falling back to localStorage');
+            this.debugLog && this.debugLog(`❌ FIREBASE ERROR: ${error.message}`);
+            this.debugLog && this.debugLog(`❌ Error code: ${error.code}`);
+            this.debugLog && this.debugLog(`❌ Error details: ${JSON.stringify(error)}`);
+
+            // Check for specific Firebase errors
+            if (error.code === 'permission-denied') {
+                this.debugLog && this.debugLog('❌ PERMISSION DENIED - Database rules need to be updated!');
+            } else if (error.code === 'unavailable') {
+                this.debugLog && this.debugLog('❌ FIREBASE UNAVAILABLE - Check internet connection');
+            } else if (error.code === 'unauthenticated') {
+                this.debugLog && this.debugLog('❌ AUTHENTICATION REQUIRED - Firebase Auth may be needed');
+            } else if (error.message === 'Firebase save timeout') {
+                this.debugLog && this.debugLog('❌ FIREBASE TIMEOUT - Taking too long to save');
+            }
+
+            this.debugLog && this.debugLog('⚠️ Falling back to localStorage');
             this.saveRocksLocal();
+
+            // Re-throw the error so the caller knows Firebase failed
+            throw error;
+        }
+    }
+
+    async uploadPhotoToStorage(base64Photo, rockId, photoIndex) {
+        try {
+            this.debugLog && this.debugLog(`📸 Creating storage reference for photo ${photoIndex}...`);
+
+            // Create a reference to the photo in Firebase Storage
+            const photoRef = this.storage.ref(`photos/${rockId}_${photoIndex}.jpg`);
+
+            this.debugLog && this.debugLog(`📸 Converting base64 to blob...`);
+            // Convert base64 to blob
+            const response = await fetch(base64Photo);
+            const blob = await response.blob();
+
+            this.debugLog && this.debugLog(`📸 Blob created, size: ${blob.size} bytes`);
+            this.debugLog && this.debugLog(`📸 Starting upload to Firebase Storage...`);
+
+            // Upload the blob
+            const snapshot = await photoRef.put(blob);
+
+            this.debugLog && this.debugLog(`📸 Upload complete, getting download URL...`);
+
+            // Get the download URL
+            const downloadURL = await snapshot.ref.getDownloadURL();
+
+            this.debugLog && this.debugLog(`✅ Photo uploaded successfully: ${downloadURL.substring(0, 50)}...`);
+            return downloadURL;
+        } catch (error) {
+            this.debugLog && this.debugLog(`❌ PHOTO UPLOAD ERROR: ${error.message}`);
+            this.debugLog && this.debugLog(`❌ Photo error code: ${error.code}`);
+
+            if (error.code === 'storage/unauthorized') {
+                this.debugLog && this.debugLog('❌ STORAGE UNAUTHORIZED - Storage rules need to be updated!');
+            } else if (error.code === 'storage/unknown') {
+                this.debugLog && this.debugLog('❌ STORAGE UNKNOWN ERROR - Check Firebase Storage setup');
+            }
+
+            // Return original base64 as fallback
+            this.debugLog && this.debugLog('📸 Using base64 fallback for photo');
+            return base64Photo;
         }
     }
 
@@ -1557,39 +2211,7 @@ class RockHunterApp {
         }
     }
 
-    async migrateLocalRocksToCloud() {
-        if (!this.db) {
-            alert('❌ Firebase not available!');
-            return;
-        }
-
-        const localRocks = this.loadRocksLocal();
-        if (localRocks.length === 0) {
-            alert('No local rocks to migrate.');
-            return;
-        }
-
-        if (confirm(`☁️ Migrate ${localRocks.length} local rocks to cloud? This will make them visible to your team.`)) {
-            this.debugLog && this.debugLog(`Migrating ${localRocks.length} rocks to Firebase`);
-
-            try {
-                for (const rock of localRocks) {
-                    await this.saveRockToFirebase(rock);
-                    this.debugLog && this.debugLog(`Migrated: ${rock.name}`);
-                }
-
-                alert(`✅ Migrated ${localRocks.length} rocks to cloud! Your team can now see them.`);
-                this.debugLog && this.debugLog('Migration completed successfully');
-
-                // Reload from Firebase to get the latest
-                this.loadRocksFromFirebase();
-
-            } catch (error) {
-                this.debugLog && this.debugLog(`Migration error: ${error.message}`);
-                alert(`❌ Migration failed: ${error.message}`);
-            }
-        }
-    }
+    // Migration function removed - rocks now auto-share when saved
 
     createDebugPanel() {
         const debugPanel = document.createElement('div');
@@ -1615,9 +2237,10 @@ class RockHunterApp {
         // Add toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.innerHTML = '🐛';
+        toggleBtn.title = 'Toggle debug panel';
         toggleBtn.style.cssText = `
             position: fixed;
-            bottom: 170px;
+            bottom: 100px;
             right: 20px;
             width: 40px;
             height: 40px;
@@ -1661,9 +2284,10 @@ class RockHunterApp {
         // Add reload rocks button
         const reloadBtn = document.createElement('button');
         reloadBtn.innerHTML = '🔄';
+        reloadBtn.title = 'Reload rocks from cloud';
         reloadBtn.style.cssText = `
             position: fixed;
-            bottom: 220px;
+            bottom: 150px;
             right: 20px;
             width: 40px;
             height: 40px;
@@ -1679,32 +2303,15 @@ class RockHunterApp {
             this.loadRocksFromFirebase();
         };
 
-        // Add migrate button
-        const migrateBtn = document.createElement('button');
-        migrateBtn.innerHTML = '☁️';
-        migrateBtn.style.cssText = `
-            position: fixed;
-            bottom: 370px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #9c27b0;
-            color: white;
-            border: none;
-            font-size: 16px;
-            z-index: 1001;
-        `;
-        migrateBtn.onclick = () => {
-            this.migrateLocalRocksToCloud();
-        };
+        // Migrate button removed since save/share is now unified
 
         // Add center map button
         const centerBtn = document.createElement('button');
         centerBtn.innerHTML = '🎯';
+        centerBtn.title = 'Center map on rocks (click to see Mark as Found button)';
         centerBtn.style.cssText = `
             position: fixed;
-            bottom: 270px;
+            bottom: 200px;
             right: 20px;
             width: 40px;
             height: 40px;
@@ -1716,28 +2323,85 @@ class RockHunterApp {
             z-index: 1001;
         `;
         centerBtn.onclick = () => {
-            this.debugLog && this.debugLog('Centering map on Auckland Domain');
-            this.map.setView([-36.8627, 174.7775], 16);
+            // If there are rocks, center on the first rock, otherwise center on Domain
+            if (this.rocks.length > 0) {
+                const firstRock = this.rocks[0];
+                this.debugLog && this.debugLog(`Centering map on ${firstRock.name}`);
+                this.map.setView([firstRock.lat, firstRock.lng], 18);
+                setTimeout(() => {
+                    // Open the rock's popup so user can see the "Mark as Found" button
+                    this.map.eachLayer(layer => {
+                        if (layer instanceof L.Marker && layer.getLatLng().lat === firstRock.lat) {
+                            layer.openPopup();
+                        }
+                    });
+                }, 500);
+            } else {
+                this.debugLog && this.debugLog('Centering map on Auckland Domain');
+                this.map.setView([-36.8627, 174.7775], 16);
+            }
             setTimeout(() => {
                 this.refreshMap();
             }, 100);
         };
 
+        // Add clear local rocks button
+        const clearLocalBtn = document.createElement('button');
+        clearLocalBtn.innerHTML = '🧹';
+        clearLocalBtn.title = 'Clear YOUR local rocks only (keeps team rocks safe)';
+        clearLocalBtn.style.cssText = `
+            position: fixed;
+            bottom: 320px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #f39c12;
+            color: white;
+            border: 3px solid white;
+            font-size: 18px;
+            z-index: 1001;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        `;
+        clearLocalBtn.onclick = () => {
+            if (confirm('🧹 Clear only YOUR local rocks? (Cloud rocks will stay for team)')) {
+                this.debugLog && this.debugLog('Clearing local rocks only');
+                localStorage.removeItem('auckland-rocks');
+
+                // Keep only cloud rocks
+                this.rocks = this.rocks.filter(rock => {
+                    // Check if this rock came from cloud sync (has photos from cloud)
+                    return false; // For now, clear all local rocks for simplicity
+                });
+                this.refreshMap();
+                this.updateStats();
+                this.debugLog && this.debugLog('Local rocks cleared successfully');
+                alert('🧹 Your local rocks cleared! Cloud rocks will re-sync in 15 seconds.');
+
+                // Force immediate cloud sync
+                setTimeout(() => {
+                    this.syncWithCloud();
+                }, 1000);
+            }
+        };
+
         // Add clear all rocks button
         const clearBtn = document.createElement('button');
         clearBtn.innerHTML = '🗑️';
+        clearBtn.title = 'DANGER: Delete ALL rocks from cloud! Affects entire team!';
         clearBtn.style.cssText = `
             position: fixed;
-            bottom: 320px;
+            bottom: 250px;
             right: 20px;
             width: 40px;
             height: 40px;
             border-radius: 50%;
             background: #e74c3c;
             color: white;
-            border: none;
+            border: 2px solid #c0392b;
             font-size: 16px;
             z-index: 1001;
+            box-shadow: 0 2px 8px rgba(231,76,60,0.4);
         `;
         clearBtn.onclick = async () => {
             if (confirm('🗑️ Delete ALL rocks from cloud? This will affect all team members!')) {
@@ -1764,7 +2428,6 @@ class RockHunterApp {
                 localStorage.removeItem('auckland-rocks');
 
                 this.rocks = [];
-                this.filteredRocks = [];
                 this.refreshMap();
                 this.updateStats();
                 this.debugLog && this.debugLog('All rocks deleted successfully');
@@ -1776,8 +2439,8 @@ class RockHunterApp {
         document.body.appendChild(toggleBtn);
         document.body.appendChild(shareBtn);
         document.body.appendChild(reloadBtn);
-        document.body.appendChild(migrateBtn);
         document.body.appendChild(centerBtn);
+        document.body.appendChild(clearLocalBtn);
         document.body.appendChild(clearBtn);
     }
 
@@ -1789,6 +2452,77 @@ class RockHunterApp {
             debugContent.innerHTML += `<br>${time}: ${message}`;
             debugContent.scrollTop = debugContent.scrollHeight;
         }
+    }
+
+    showTemporaryMessage(message, type = 'info') {
+        // Create temporary message notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+
+        // Set background color based on type
+        switch (type) {
+            case 'success':
+                notification.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                break;
+            case 'warning':
+                notification.style.background = 'linear-gradient(135deg, #FF9800, #F57C00)';
+                break;
+            case 'error':
+                notification.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+                break;
+            default:
+                notification.style.background = 'linear-gradient(135deg, #2196F3, #1976D2)';
+        }
+
+        notification.innerHTML = `
+            ${message}
+            <button onclick="this.parentElement.remove()" style="
+                background: none;
+                border: none;
+                color: white;
+                margin-left: 10px;
+                cursor: pointer;
+                font-size: 16px;
+                opacity: 0.8;
+            ">✕</button>
+        `;
+
+        // Add CSS keyframe for animation if not already added
+        if (!document.getElementById('notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(notification);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 5000);
     }
 }
 

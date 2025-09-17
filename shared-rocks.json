@@ -1,0 +1,41 @@
+{
+  "rocks": [
+    {
+      "id": "1758011393337",
+      "name": "cherry tree",
+      "description": "kereru",
+      "lat": -36.860561949144085,
+      "lng": 174.77418780326843,
+      "photos": ["data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+S2VyZXJ1IFBob3RvPC90ZXh0Pjwvc3ZnPg=="],
+      "timestamp": "2024-09-16T20:34:46.000Z",
+      "status": "hidden",
+      "foundBy": null,
+      "foundTimestamp": null,
+      "foundPhoto": null,
+      "foundNotes": "",
+      "postedBy": null,
+      "postedByUsername": null,
+      "isAnonymous": true,
+      "foundByUserId": null
+    },
+    {
+      "id": "1758015971000",
+      "name": "pink rock",
+      "description": "KD",
+      "lat": -36.860003979461915,
+      "lng": 174.77290570735934,
+      "photos": ["data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmYjZjMSIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UGluayBSb2NrPC90ZXh0Pjwvc3ZnPg=="],
+      "timestamp": "2024-09-16T20:46:11.000Z",
+      "status": "hidden",
+      "foundBy": null,
+      "foundTimestamp": null,
+      "foundPhoto": null,
+      "foundNotes": "",
+      "postedBy": null,
+      "postedByUsername": null,
+      "isAnonymous": true,
+      "foundByUserId": null
+    }
+  ],
+  "lastUpdated": "2024-09-16T20:46:16.000Z"
+}

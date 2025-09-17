@@ -2,19 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Standard cache control -->
-    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <!-- iOS Safari compatibility -->
-    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Auckland Domain Rock Hunter - Find Hidden Rocks!</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css?v=1757751037">
+    <link rel="stylesheet" href="styles.css?v=1759001111&force-refresh=true">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        .leaflet-container {
+            border-radius: 10px;
+        }
+        .user-location-marker {
+            background: #2196F3 !important;
+            color: white !important;
+            border: 3px solid white !important;
+            border-radius: 50% !important;
+            width: 40px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -23,9 +40,6 @@
             <div class="controls">
                 <button id="toggle-view" class="btn fern">📍 View All Rocks</button>
                 <button id="add-rock-mode" class="btn cherry">➕ Add Rock</button>
-                <div id="user-section" class="user-section">
-                    <!-- User authentication buttons will be added here by JavaScript -->
-                </div>
             </div>
         </header>
 
@@ -52,76 +66,49 @@
             <!-- Nature Divider -->
             <div class="nature-divider"></div>
 
-            <!-- Search and Filter Panel -->
-            <div id="search-panel" class="panel">
-                <h3>🔍 Search & Filter Rocks</h3>
-                <div class="search-controls">
-                    <input type="text" id="search-input" placeholder="Search by rock name or description...">
-                    
-                    <div class="filter-row">
-                        <select id="status-filter">
-                            <option value="all">All Rocks</option>
-                            <option value="hidden">Hidden Only</option>
-                            <option value="found">Found Only</option>
-                        </select>
-                        
-                        <select id="date-filter">
-                            <option value="all">All Time</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="recent">Last 3 Days</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-actions">
-                        <button id="apply-filters" class="btn primary">Apply Filters</button>
-                        <button id="clear-filters" class="btn">Clear All</button>
-                    </div>
+            <!-- Map Section -->
+            <div class="map-section">
+                <h3>🗺️ Map View</h3>
+                <div id="map" class="map-container" style="height: 400px;">
+                    <!-- Interactive Leaflet map will be created here -->
                 </div>
             </div>
 
-            <!-- Nature Divider -->
-            <div class="nature-divider"></div>
-
-            <div id="map" class="map-container"></div>
-            
             <div id="rock-panel" class="panel hidden">
                 <h3>Hidden Rocks</h3>
                 <div id="rocks-list"></div>
                 <button id="close-panel" class="btn">Close</button>
             </div>
 
+            <!-- Add Rock Modal -->
             <div id="add-rock-modal" class="modal hidden">
                 <div class="modal-content">
-                    <h3>Add New Rock</h3>
+                    <h3>➕ Add New Rock</h3>
                     <form id="rock-form">
-                        <input type="text" id="rock-name" placeholder="Rock name" required>
-                        <textarea id="rock-description" placeholder="Description (optional)"></textarea>
-                        
-                        <div id="posting-toggle" class="posting-toggle hidden">
-                            <label class="toggle-label">
-                                <input type="checkbox" id="post-as-user" checked>
-                                <span class="toggle-text">Post as <span id="current-username"></span></span>
-                            </label>
-                            <small>Uncheck to post anonymously</small>
-                        </div>
-                        
-                        <div class="photo-section">
-                            <!-- Hidden file inputs for different photo sources -->
-                            <input type="file" id="camera-input" accept="image/*" capture style="display: none;">
+                        <input type="text" id="rock-name" placeholder="Rock name *" required>
 
-                            <!-- Simplified photo option buttons -->
-                            <div class="photo-source-buttons">
-                                <button type="button" id="camera-btn" class="btn maple photo-source-btn">📷 Take Photo</button>
-                                <button type="button" id="gallery-btn" class="btn fantail photo-source-btn">🖼️ Photo Library</button>
+                        <textarea id="rock-description" placeholder="Description (optional)" rows="3"></textarea>
+
+                        <input type="text" id="owner-name" placeholder="Your name (optional)">
+
+                        <div class="photo-section">
+                            <div class="photo-buttons">
+                                <button type="button" id="camera-btn" class="btn maple">📷 Take Photo</button>
+                                <button type="button" id="gallery-btn" class="btn fantail">🖼️ Choose Photo</button>
                             </div>
 
-                            <div id="photo-preview" class="photo-preview hidden"></div>
+                            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+                            <input type="file" id="gallery-input" accept="image/*" style="display: none;">
+
+                            <div id="photo-preview" class="photo-preview hidden">
+                                <img id="preview-image" src="" alt="Photo preview" style="max-width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+                                <button type="button" id="remove-photo" class="btn secondary" style="margin-top: 10px;">Remove Photo</button>
+                            </div>
                         </div>
-                        
+
                         <div class="modal-actions">
-                            <button type="submit" class="btn primary">Save Rock</button>
-                            <button type="button" id="cancel-add" class="btn">Cancel</button>
+                            <button type="submit" class="btn primary">💾 Save Rock</button>
+                            <button type="button" id="cancel-add" class="btn secondary">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -130,6 +117,404 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=1757751037"></script>
+    <script>
+        let map;
+        let userMarker;
+        let rocks = [];
+        let addRockMode = false;
+        let selectedPhoto = null;
+        let db = null;
+
+        // Initialize Firebase
+        function initFirebase() {
+            try {
+                if (typeof firebase !== 'undefined' && window.firebaseDb) {
+                    db = window.firebaseDb;
+                    console.log('🔥 Firebase initialized');
+                } else {
+                    console.log('⚠️ Firebase not available, using local storage only');
+                }
+            } catch (error) {
+                console.log('⚠️ Firebase error:', error);
+            }
+        }
+
+        // Initialize the map centered on Auckland Domain
+        function initMap() {
+            console.log('🗺️ Initializing map...');
+
+            map = L.map('map').setView([-36.8627, 174.7775], 16);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            console.log('✅ Map initialized');
+
+            // Load existing rocks from local storage
+            loadRocks();
+
+            // Start GPS after map is ready
+            setTimeout(startGPS, 1000);
+        }
+
+        function startGPS() {
+            console.log('🌍 Starting GPS...');
+
+            if (!navigator.geolocation) {
+                alert('❌ GPS not supported by your browser');
+                return;
+            }
+
+            alert('🌍 Getting your GPS location...');
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    console.log(`✅ GPS: ${lat}, ${lng} (accuracy: ${accuracy}m)`);
+                    alert(`✅ GPS found you at: ${lat.toFixed(6)}, ${lng.toFixed(6)}\nAccuracy: ${accuracy.toFixed(0)}m`);
+
+                    // Add accurate GPS marker to map
+                    addAccurateGPSMarker(lat, lng, accuracy);
+                },
+                function(error) {
+                    console.log(`❌ GPS Error: ${error.message} (Code: ${error.code})`);
+                    let errorMsg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = 'Location access denied by user';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = 'Location information unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = 'Location request timed out';
+                            break;
+                        default:
+                            errorMsg = 'Unknown GPS error';
+                    }
+                    alert(`❌ GPS failed: ${errorMsg}\nTechnical: ${error.message}`);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 30000
+                }
+            );
+        }
+
+        function addAccurateGPSMarker(lat, lng, accuracy) {
+            if (!map) {
+                alert('❌ Map not ready yet');
+                return;
+            }
+
+            // Remove existing user marker
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+
+            // Create custom blue marker
+            const userIcon = L.divIcon({
+                className: 'user-location-marker',
+                html: '📍',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            // Add marker at exact GPS coordinates
+            userMarker = L.marker([lat, lng], { icon: userIcon })
+                .addTo(map)
+                .bindPopup(`📍 Your Location<br>Accuracy: ${accuracy.toFixed(0)}m`);
+
+            // Pan map to user location
+            map.setView([lat, lng], 17);
+
+            // Add accuracy circle
+            L.circle([lat, lng], {
+                color: '#2196F3',
+                fillColor: '#2196F3',
+                fillOpacity: 0.2,
+                radius: accuracy
+            }).addTo(map);
+
+            alert('✅ Accurate GPS marker placed on map!');
+        }
+
+        // Rock saving functionality
+        function saveRock(rockData) {
+            alert('🔍 saveRock function called!');
+
+            // Generate unique ID
+            const id = 'rock_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            alert(`🔍 Generated ID: ${id}`);
+
+            const rock = {
+                id: id,
+                name: rockData.name,
+                description: rockData.description || '',
+                ownerName: rockData.ownerName || 'Anonymous',
+                date: new Date().toISOString(),
+                lat: rockData.lat,
+                lng: rockData.lng,
+                photo: rockData.photo || null
+            };
+
+            alert(`🔍 Rock object created: ${JSON.stringify(rock).substring(0, 200)}...`);
+
+            // Save to local storage
+            try {
+                rocks.push(rock);
+                localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+                console.log('💾 Rock saved locally');
+                alert('✅ Rock saved to local storage');
+            } catch (error) {
+                alert(`❌ Local storage error: ${error.message}`);
+            }
+
+            // Save to Firebase (if available)
+            if (db) {
+                alert('🔥 Attempting Firebase save...');
+                db.collection('rocks').doc(id).set(rock).then(() => {
+                    console.log('🔥 Rock saved to Firebase');
+                    alert('✅ Rock saved to Firebase');
+                }).catch((error) => {
+                    console.log('⚠️ Firebase save error:', error);
+                    alert(`❌ Firebase error: ${error.message}`);
+                });
+            } else {
+                alert('⚠️ Firebase not available');
+            }
+
+            // Add marker to map
+            alert('🔍 Adding marker to map...');
+            try {
+                addRockMarker(rock);
+                alert('✅ Marker added to map');
+            } catch (error) {
+                alert(`❌ Marker error: ${error.message}`);
+            }
+
+            // Update stats
+            alert('🔍 Updating stats...');
+            try {
+                updateStats();
+                alert('✅ Stats updated');
+            } catch (error) {
+                alert(`❌ Stats error: ${error.message}`);
+            }
+
+            alert(`✅ Rock "${rock.name}" saved successfully!\nDate: ${new Date(rock.date).toLocaleDateString()}`);
+        }
+
+        function loadRocks() {
+            // Load from local storage
+            const localRocks = localStorage.getItem('auckland_domain_rocks');
+            if (localRocks) {
+                rocks = JSON.parse(localRocks);
+                console.log(`📦 Loaded ${rocks.length} rocks from local storage`);
+            }
+
+            // Load from Firebase (if available)
+            if (db) {
+                db.collection('rocks').get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const firebaseRock = doc.data();
+                        // Only add if not already in local storage
+                        if (!rocks.find(r => r.id === firebaseRock.id)) {
+                            rocks.push(firebaseRock);
+                        }
+                    });
+                    console.log(`🔥 Total rocks after Firebase sync: ${rocks.length}`);
+                    displayRocks();
+                    updateStats();
+                }).catch((error) => {
+                    console.log('⚠️ Firebase load error:', error);
+                    displayRocks();
+                    updateStats();
+                });
+            } else {
+                displayRocks();
+                updateStats();
+            }
+        }
+
+        function displayRocks() {
+            rocks.forEach(rock => addRockMarker(rock));
+        }
+
+        function addRockMarker(rock) {
+            const rockIcon = L.divIcon({
+                className: 'rock-marker',
+                html: '🪨',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            const popupContent = `
+                <div class="rock-popup">
+                    <h4>${rock.name}</h4>
+                    ${rock.description ? `<p>${rock.description}</p>` : ''}
+                    <small>Added by: ${rock.ownerName}<br>Date: ${new Date(rock.date).toLocaleDateString()}</small>
+                    ${rock.photo ? `<br><img src="${rock.photo}" style="width:100px; height:100px; object-fit:cover; margin-top:5px; border-radius:5px;">` : ''}
+                </div>
+            `;
+
+            L.marker([rock.lat, rock.lng], { icon: rockIcon })
+                .addTo(map)
+                .bindPopup(popupContent);
+        }
+
+        function updateStats() {
+            const totalRocks = rocks.length;
+            document.querySelector('.stat-item:nth-child(1) .stat-number').textContent = totalRocks;
+            document.querySelector('.stat-item:nth-child(2) .stat-number').textContent = totalRocks; // Assuming all are still hidden
+            document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = '0'; // Found counter
+        }
+
+        // Photo handling
+        function handlePhotoSelection(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedPhoto = e.target.result;
+                    document.getElementById('preview-image').src = selectedPhoto;
+                    document.getElementById('photo-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Rock button
+            document.getElementById('add-rock-mode').addEventListener('click', function() {
+                addRockMode = !addRockMode;
+                if (addRockMode) {
+                    alert('📍 Tap anywhere on the map to add a rock!');
+                    this.textContent = '❌ Cancel Add Rock';
+                    this.className = 'btn secondary';
+                } else {
+                    this.textContent = '➕ Add Rock';
+                    this.className = 'btn cherry';
+                }
+            });
+
+            // Map click to add rock
+            setTimeout(() => {
+                if (map) {
+                    map.on('click', function(e) {
+                        if (addRockMode) {
+                            openAddRockModal(e.latlng.lat, e.latlng.lng);
+                        }
+                    });
+                }
+            }, 2000);
+
+            // Photo buttons
+            document.getElementById('camera-btn').addEventListener('click', function() {
+                document.getElementById('camera-input').click();
+            });
+
+            document.getElementById('gallery-btn').addEventListener('click', function() {
+                document.getElementById('gallery-input').click();
+            });
+
+            // Photo inputs
+            document.getElementById('camera-input').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    handlePhotoSelection(e.target.files[0]);
+                }
+            });
+
+            document.getElementById('gallery-input').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    handlePhotoSelection(e.target.files[0]);
+                }
+            });
+
+            // Remove photo
+            document.getElementById('remove-photo').addEventListener('click', function() {
+                selectedPhoto = null;
+                document.getElementById('photo-preview').classList.add('hidden');
+                document.getElementById('camera-input').value = '';
+                document.getElementById('gallery-input').value = '';
+            });
+
+            // Form submission
+            document.getElementById('rock-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('🔍 Save Rock button clicked!');
+
+                const name = document.getElementById('rock-name').value.trim();
+                const description = document.getElementById('rock-description').value.trim();
+                const ownerName = document.getElementById('owner-name').value.trim();
+
+                alert(`🔍 Form data - Name: "${name}", Description: "${description}", Owner: "${ownerName}"`);
+
+                if (!name) {
+                    alert('❌ Please enter a rock name');
+                    return;
+                }
+
+                const lat = parseFloat(document.getElementById('rock-form').dataset.lat);
+                const lng = parseFloat(document.getElementById('rock-form').dataset.lng);
+
+                alert(`🔍 Location data - Lat: ${lat}, Lng: ${lng}`);
+
+                alert('🔍 About to save rock...');
+
+                saveRock({
+                    name: name,
+                    description: description,
+                    ownerName: ownerName,
+                    lat: lat,
+                    lng: lng,
+                    photo: selectedPhoto
+                });
+
+                // Close modal and reset
+                closeAddRockModal();
+            });
+
+            // Cancel button
+            document.getElementById('cancel-add').addEventListener('click', function() {
+                closeAddRockModal();
+            });
+        });
+
+        function openAddRockModal(lat, lng) {
+            document.getElementById('rock-form').dataset.lat = lat;
+            document.getElementById('rock-form').dataset.lng = lng;
+            document.getElementById('add-rock-modal').classList.remove('hidden');
+
+            // Reset form
+            document.getElementById('rock-form').reset();
+            selectedPhoto = null;
+            document.getElementById('photo-preview').classList.add('hidden');
+        }
+
+        function closeAddRockModal() {
+            document.getElementById('add-rock-modal').classList.add('hidden');
+
+            // Reset add rock mode
+            addRockMode = false;
+            const addBtn = document.getElementById('add-rock-mode');
+            addBtn.textContent = '➕ Add Rock';
+            addBtn.className = 'btn cherry';
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            console.log('🔥 Page loaded, initializing...');
+            initFirebase();
+            setTimeout(initMap, 500);
+        });
+    </script>
 </body>
 </html>
