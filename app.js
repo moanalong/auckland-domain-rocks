@@ -917,7 +917,7 @@ class RockHunterApp {
         marker.style.top = `${rock.yPercent || 50}%`;
 
         // Add icon based on status
-        marker.innerHTML = rock.status === 'found' ? '✅' : '🪨';
+        marker.innerHTML = rock.status === 'found' ? '✅' : '<div class="header-rock"></div>';
 
         // Add click handler for rock interaction
         marker.addEventListener('click', (e) => {
@@ -930,7 +930,7 @@ class RockHunterApp {
     }
 
     showRockDetails(rock) {
-        let details = `🪨 ${rock.name}\n`;
+        let details = `💎 ${rock.name}\n`;
         if (rock.description) details += `📝 ${rock.description}\n`;
         details += `📍 Status: ${rock.status === 'found' ? 'Found ✅' : 'Hidden 🔍'}\n`;
         if (rock.foundBy) details += `👤 Found by: ${rock.foundBy}\n`;
@@ -1486,7 +1486,7 @@ class RockHunterApp {
 
                 <div class="profile-sections">
                     <div class="profile-section">
-                        <h4>🪨 Your Posted Rocks</h4>
+                        <h4>💎 Your Posted Rocks</h4>
                         <div class="user-rocks-list">
                             ${userRocks.length > 0 ? userRocks.map(rock => `
                                 <div class="user-rock-item">
