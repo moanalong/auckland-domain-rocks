@@ -45,6 +45,11 @@
         </header>
 
         <main>
+            <!-- Mark as Found Button -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button id="mark-found-mode" class="btn cherry">🎯 Mark as Found</button>
+            </div>
+
             <!-- Statistics Dashboard -->
             <div id="stats-dashboard" class="stats-panel">
                 <h3>📊 Auckland Domain Rock Stats</h3>
@@ -373,9 +378,12 @@
 
         function updateStats() {
             const totalRocks = rocks.length;
+            const foundRocks = rocks.filter(rock => rock.status === 'found').length;
+            const hiddenRocks = totalRocks - foundRocks;
+
             document.querySelector('.stat-item:nth-child(1) .stat-number').textContent = totalRocks;
-            document.querySelector('.stat-item:nth-child(2) .stat-number').textContent = totalRocks; // Assuming all are still hidden
-            document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = '0'; // Found counter
+            document.querySelector('.stat-item:nth-child(2) .stat-number').textContent = hiddenRocks;
+            document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = foundRocks;
         }
 
         // Photo handling
@@ -436,6 +444,12 @@
                             </div>
                             <div class="rock-owner">
                                 👤 ${rock.ownerName || 'Anonymous'}
+                            </div>
+                            <div class="rock-status">
+                                ${rock.status === 'found'
+                                    ? `✅ Found by ${rock.foundBy} on ${new Date(rock.foundDate).toLocaleDateString()}`
+                                    : '🎨 Hidden'
+                                }
                             </div>
                         </div>
                     </div>
@@ -517,6 +531,73 @@
 
                             updateStats();
                             alert(`✅ Rock "${rock.name}" has been removed!`);
+                        }
+                    } else {
+                        alert('Invalid selection!');
+                    }
+                }
+            });
+
+            // Mark as Found button
+            document.getElementById('mark-found-mode').addEventListener('click', function() {
+                const hiddenRocks = rocks.filter(rock => rock.status !== 'found');
+
+                if (hiddenRocks.length === 0) {
+                    alert('No hidden rocks to mark as found!');
+                    return;
+                }
+
+                // Show rock selection for marking as found
+                let rockList = 'Select a rock to mark as found:\n\n';
+                hiddenRocks.forEach((rock, index) => {
+                    rockList += `${index + 1}. ${rock.name} (by ${rock.ownerName})\n`;
+                });
+
+                const selection = prompt(rockList + '\nEnter the number of the rock you found (or cancel):');
+
+                if (selection && !isNaN(selection)) {
+                    const rockIndex = parseInt(selection) - 1;
+                    if (rockIndex >= 0 && rockIndex < hiddenRocks.length) {
+                        const rock = hiddenRocks[rockIndex];
+                        const finderName = prompt(`Who found "${rock.name}"?`, 'Anonymous') || 'Anonymous';
+
+                        if (confirm(`Mark "${rock.name}" as found by ${finderName}?`)) {
+                            // Find the rock in the main array and update it
+                            const mainRockIndex = rocks.findIndex(r => r.id === rock.id);
+                            if (mainRockIndex !== -1) {
+                                rocks[mainRockIndex].status = 'found';
+                                rocks[mainRockIndex].foundBy = finderName;
+                                rocks[mainRockIndex].foundDate = new Date().toISOString();
+
+                                // Update local storage
+                                localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+
+                                // Update Firebase if available
+                                if (db) {
+                                    db.collection('rocks').doc(rock.id).update({
+                                        status: 'found',
+                                        foundBy: finderName,
+                                        foundDate: new Date().toISOString()
+                                    }).then(() => {
+                                        console.log('Rock marked as found in Firebase');
+                                    }).catch((error) => {
+                                        console.log('Error updating Firebase:', error);
+                                    });
+                                }
+
+                                // Refresh display
+                                if (map) {
+                                    map.eachLayer(function(layer) {
+                                        if (layer instanceof L.Marker) {
+                                            map.removeLayer(layer);
+                                        }
+                                    });
+                                    displayRocks();
+                                }
+
+                                updateStats();
+                                alert(`🎉 "${rock.name}" marked as found by ${finderName}!`);
+                            }
                         }
                     } else {
                         alert('Invalid selection!');
