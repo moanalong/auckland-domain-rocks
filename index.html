@@ -40,6 +40,7 @@
             <div class="controls">
                 <button id="toggle-view" class="btn fern">📍 View All Rocks</button>
                 <button id="add-rock-mode" class="btn cherry">➕ Add Rock</button>
+                <button id="remove-rock-mode" class="btn cherry">➖ Remove Rock</button>
             </div>
         </header>
 
@@ -465,6 +466,61 @@
                 } else {
                     this.textContent = '➕ Add Rock';
                     this.className = 'btn cherry';
+                }
+            });
+
+            // Remove Rock button
+            document.getElementById('remove-rock-mode').addEventListener('click', function() {
+                if (rocks.length === 0) {
+                    alert('No rocks to remove!');
+                    return;
+                }
+
+                // Show rock selection for removal
+                let rockList = 'Select a rock to remove:\n\n';
+                rocks.forEach((rock, index) => {
+                    rockList += `${index + 1}. ${rock.name} (by ${rock.ownerName})\n`;
+                });
+
+                const selection = prompt(rockList + '\nEnter the number of the rock to remove (or cancel):');
+
+                if (selection && !isNaN(selection)) {
+                    const rockIndex = parseInt(selection) - 1;
+                    if (rockIndex >= 0 && rockIndex < rocks.length) {
+                        const rock = rocks[rockIndex];
+
+                        if (confirm(`Are you sure you want to remove "${rock.name}"?`)) {
+                            // Remove from array
+                            rocks.splice(rockIndex, 1);
+
+                            // Update local storage
+                            localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+
+                            // Remove from Firebase if available
+                            if (db) {
+                                db.collection('rocks').doc(rock.id).delete().then(() => {
+                                    console.log('Rock removed from Firebase');
+                                }).catch((error) => {
+                                    console.log('Error removing from Firebase:', error);
+                                });
+                            }
+
+                            // Refresh display
+                            if (map) {
+                                map.eachLayer(function(layer) {
+                                    if (layer instanceof L.Marker) {
+                                        map.removeLayer(layer);
+                                    }
+                                });
+                                displayRocks();
+                            }
+
+                            updateStats();
+                            alert(`✅ Rock "${rock.name}" has been removed!`);
+                        }
+                    } else {
+                        alert('Invalid selection!');
+                    }
                 }
             });
 
