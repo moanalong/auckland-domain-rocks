@@ -281,7 +281,7 @@
             const rockSizeKB = rockString.length / 1024;
             console.log(`📊 Rock data size: ${rockSizeKB.toFixed(2)} KB`);
 
-            if (rockString.length > 900000) { // 900KB limit for Firebase
+            if (rockString.length > 600000) { // 600KB limit for Firebase (including overhead)
                 alert('❌ Rock data is too large to save. Please use a smaller photo or remove the photo.');
                 return;
             }
@@ -419,9 +419,9 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        // Set maximum dimensions
-                        const maxWidth = 800;
-                        const maxHeight = 600;
+                        // Set much smaller maximum dimensions for Firebase
+                        const maxWidth = 400;
+                        const maxHeight = 300;
                         let { width, height } = img;
 
                         // Calculate new dimensions
@@ -443,14 +443,26 @@
                         // Draw and compress
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Convert to compressed JPEG
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+                        // Start with high compression and reduce quality until it fits
+                        let quality = 0.3; // Start with 30% quality
+                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
 
-                        console.log(`📸 Compressed size: ${(compressedDataUrl.length / 1024 / 1024).toFixed(2)} MB`);
+                        // Keep reducing quality until it fits Firebase limit
+                        while (compressedDataUrl.length > 500000 && quality > 0.1) { // 500KB limit
+                            quality -= 0.05;
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
 
-                        // Check if still too large for Firebase (Firebase limit is ~1MB per document)
-                        if (compressedDataUrl.length > 800000) { // 800KB limit
-                            alert('⚠️ Photo is still too large after compression. Please choose a smaller image.');
+                        console.log(`📸 Final compressed size: ${(compressedDataUrl.length / 1024).toFixed(2)} KB at ${(quality * 100).toFixed(0)}% quality`);
+
+                        // Final check - if still too large, offer option to save without photo
+                        if (compressedDataUrl.length > 500000) { // 500KB absolute limit
+                            const saveWithoutPhoto = confirm('❌ Photo is too large even after compression.\n\n✅ Save rock without photo?\n❌ Cancel to choose different photo?');
+                            if (saveWithoutPhoto) {
+                                selectedPhoto = null;
+                                document.getElementById('photo-preview').classList.add('hidden');
+                                alert('✅ Photo removed. You can now save the rock without a photo.');
+                            }
                             return;
                         }
 
