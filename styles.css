@@ -475,6 +475,51 @@ h1::before {
     box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
 }
 
+/* Danger button for delete actions */
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 36px;
+    min-width: 80px;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Rock actions container */
+.rock-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+/* Popup actions styling */
+.popup-actions {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
 
 .refresh-btn {
     background: #e74c3c !important;

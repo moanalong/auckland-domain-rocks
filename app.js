@@ -845,18 +845,34 @@ class RockHunterApp {
         } else {
             popupContent += `<button class="mark-found-btn" data-rock-id="${rock.id}">🎯 Mark as Found</button>`;
         }
+
+        // Add delete button if current user owns this rock
+        if (this.canUserDeleteRock(rock)) {
+            popupContent += `<div class="popup-actions">`;
+            popupContent += `<button class="btn-danger delete-rock-popup-btn" data-rock-id="${rock.id}">🗑️ Delete Rock</button>`;
+            popupContent += `</div>`;
+        }
         
         popupContent += `</div></div>`;
 
         marker.bindPopup(popupContent);
 
-        // Add event listener for mark as found button and photo clicks when popup opens
+        // Add event listener for mark as found button, delete button, and photo clicks when popup opens
         marker.on('popupopen', () => {
             const markFoundBtn = document.querySelector('.mark-found-btn[data-rock-id="' + rock.id + '"]');
             if (markFoundBtn) {
                 markFoundBtn.addEventListener('click', () => {
                     this.debugLog && this.debugLog(`Mark as found clicked for rock: ${rock.id}`);
                     this.markAsFound(rock.id);
+                });
+            }
+
+            // Add event listener for delete button in popup
+            const deleteBtn = document.querySelector('.delete-rock-popup-btn[data-rock-id="' + rock.id + '"]');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    this.debugLog && this.debugLog(`Delete rock clicked for rock: ${rock.id}`);
+                    this.confirmDeleteRock(rock.id);
                 });
             }
 
@@ -1015,6 +1031,14 @@ class RockHunterApp {
                 this.debugLog && this.debugLog(`No photo found for ${rock.name}`);
             }
 
+            // Check if current user can delete this rock
+            const canDelete = this.canUserDeleteRock(rock);
+            const deleteButtonHtml = canDelete ? `
+                <div class="rock-actions">
+                    <button class="btn-danger delete-rock-btn" data-rock-id="${rock.id}">🗑️ Remove</button>
+                </div>
+            ` : '';
+
             return `
                 <div class="rock-item">
                     <h4>${rock.name}</h4>
@@ -1030,12 +1054,16 @@ class RockHunterApp {
                         <div class="rock-status ${rock.status}">
                             ${rock.status === 'found' ? '✅ Found' : '🎨 Hidden'}
                         </div>
+                        <div class="rock-owner">
+                            👤 ${rock.postedByUsername || rock.ownerName || 'Anonymous'}
+                        </div>
                     </div>
+                    ${deleteButtonHtml}
                 </div>
             `;
         }).join('');
 
-        // Add event listeners for rock list photos
+        // Add event listeners for rock list photos and delete buttons
         setTimeout(() => {
             const rockPhotos = document.querySelectorAll('.rock-photo[data-photo-url]');
             rockPhotos.forEach(photoElement => {
@@ -1043,6 +1071,16 @@ class RockHunterApp {
                     const photoUrl = photoElement.getAttribute('data-photo-url');
                     this.debugLog && this.debugLog(`Rock list photo clicked: ${photoUrl}`);
                     this.showPhotoModal(photoUrl);
+                });
+            });
+
+            // Add event listeners for delete buttons
+            const deleteButtons = document.querySelectorAll('.delete-rock-btn');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rockId = button.getAttribute('data-rock-id');
+                    this.confirmDeleteRock(rockId);
                 });
             });
         }, 100);
@@ -1054,6 +1092,114 @@ class RockHunterApp {
         if (!rock) return;
 
         this.showMarkFoundModal(rock);
+    }
+
+    // Check if current user can delete a specific rock
+    canUserDeleteRock(rock) {
+        // Users can only delete their own rocks
+        if (!this.currentUser) return false;
+
+        // Check if rock was posted by current user
+        return rock.postedBy === this.currentUser.id ||
+               (rock.postedByUsername && rock.postedByUsername === this.currentUser.username);
+    }
+
+    // Show confirmation dialog before deleting a rock
+    confirmDeleteRock(rockId) {
+        const rock = this.rocks.find(r => r.id === rockId);
+        if (!rock) {
+            alert('❌ Rock not found');
+            return;
+        }
+
+        if (!this.canUserDeleteRock(rock)) {
+            alert('❌ You can only delete rocks that you posted');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete "${rock.name}"?\n\nThis will permanently remove the rock from both your device and the cloud. This action cannot be undone.`;
+
+        if (confirm(confirmMessage)) {
+            this.deleteRock(rockId);
+        }
+    }
+
+    // Delete a rock from both local storage and Firebase
+    async deleteRock(rockId) {
+        this.debugLog && this.debugLog(`🗑️ Deleting rock: ${rockId}`);
+
+        const rock = this.rocks.find(r => r.id === rockId);
+        if (!rock) {
+            alert('❌ Rock not found');
+            return;
+        }
+
+        if (!this.canUserDeleteRock(rock)) {
+            alert('❌ You can only delete rocks that you posted');
+            return;
+        }
+
+        try {
+            // Step 1: Remove from local array
+            this.rocks = this.rocks.filter(r => r.id !== rockId);
+            this.debugLog && this.debugLog('✅ Rock removed from local array');
+
+            // Step 2: Save updated local storage
+            this.saveRocksLocal();
+            this.debugLog && this.debugLog('✅ Local storage updated');
+
+            // Step 3: Delete from Firebase
+            await this.deleteRockFromFirebase(rockId);
+
+            // Step 4: Clean up shared rocks JSON (for fallback sync)
+            this.removeFromSharedCollection(rockId);
+
+            // Step 5: Update UI
+            this.displayRocksOnMap();
+            this.updateRocksList();
+            this.updateStats();
+
+            alert(`✅ Rock "${rock.name}" has been deleted successfully`);
+            this.debugLog && this.debugLog(`✅ Rock ${rock.name} deleted completely`);
+
+        } catch (error) {
+            this.debugLog && this.debugLog(`❌ Error deleting rock: ${error.message}`);
+
+            // If Firebase deletion failed, we should restore the rock to local storage
+            // to maintain consistency
+            this.rocks.push(rock);
+            this.saveRocksLocal();
+            this.displayRocksOnMap();
+            this.updateRocksList();
+            this.updateStats();
+
+            alert(`❌ Failed to delete rock: ${error.message}\nThe rock has been restored.`);
+        }
+    }
+
+    // Delete rock from Firebase
+    async deleteRockFromFirebase(rockId) {
+        if (!this.db) {
+            this.debugLog && this.debugLog('Firebase not available, skipping cloud deletion');
+            return Promise.resolve();
+        }
+
+        try {
+            this.debugLog && this.debugLog(`🔥 Deleting rock ${rockId} from Firebase...`);
+
+            // Delete from Firestore with timeout
+            const deletePromise = this.db.collection('rocks').doc(rockId).delete();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Firebase delete timeout')), 10000)
+            );
+
+            await Promise.race([deletePromise, timeoutPromise]);
+            this.debugLog && this.debugLog('✅ Rock deleted from Firebase');
+
+        } catch (error) {
+            this.debugLog && this.debugLog(`❌ Firebase deletion failed: ${error.message}`);
+            throw new Error(`Firebase deletion failed: ${error.message}`);
+        }
     }
 
     showMarkFoundModal(rock) {
@@ -2062,6 +2208,23 @@ class RockHunterApp {
         } catch (error) {
             this.debugLog && this.debugLog(`❌ Failed to update shared collection: ${error.message}`);
             return Promise.reject(error);
+        }
+    }
+
+    // Remove rock from shared collection (for fallback sync)
+    removeFromSharedCollection(rockId) {
+        try {
+            const existingData = localStorage.getItem('auckland-rocks-shared') || '{"rocks": []}';
+            const sharedData = JSON.parse(existingData);
+
+            // Remove the rock from shared collection
+            sharedData.rocks = sharedData.rocks.filter(r => r.id !== rockId);
+            sharedData.lastUpdated = new Date().toISOString();
+
+            localStorage.setItem('auckland-rocks-shared', JSON.stringify(sharedData));
+            this.debugLog && this.debugLog(`✅ Rock ${rockId} removed from shared collection`);
+        } catch (error) {
+            this.debugLog && this.debugLog(`❌ Failed to remove rock from shared collection: ${error.message}`);
         }
     }
 
