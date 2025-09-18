@@ -510,10 +510,17 @@
             }
 
             container.innerHTML = rocks.map(rock => {
+                // Add photo if available
+                const photoHtml = rock.photo ?
+                    `<div class="rock-photo-container">
+                        <img src="${rock.photo}" class="rock-photo" alt="${rock.name}" onclick="showPhotoModal('${rock.photo}')">
+                    </div>` : '';
+
                 return `
                     <div class="rock-item">
                         <h4>${rock.name}</h4>
                         ${rock.description ? `<p class="rock-description">${rock.description}</p>` : ''}
+                        ${photoHtml}
                         <div class="rock-meta">
                             <div class="coordinates">
                                 📍 ${rock.lat.toFixed(6)}, ${rock.lng.toFixed(6)}
@@ -534,6 +541,31 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // Show photo in full screen modal
+        function showPhotoModal(photoUrl) {
+            const modal = document.createElement('div');
+            modal.className = 'photo-modal';
+            modal.innerHTML = `
+                <div class="photo-modal-content">
+                    <span class="close-photo" onclick="closePhotoModal()">&times;</span>
+                    <img src="${photoUrl}" class="modal-photo" alt="Rock photo">
+                </div>
+            `;
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    closePhotoModal();
+                }
+            };
+            document.body.appendChild(modal);
+        }
+
+        function closePhotoModal() {
+            const modal = document.querySelector('.photo-modal');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
         }
 
         // Event listeners
