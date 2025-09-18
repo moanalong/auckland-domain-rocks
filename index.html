@@ -369,21 +369,33 @@
         }
 
         function addRockMarker(rock) {
+            // Use pink oval rock icon for found rocks, regular rock icon for hidden rocks
             const rockIcon = L.divIcon({
-                className: 'rock-marker',
+                className: rock.status === 'found' ? 'rock-marker found-marker' : 'rock-marker',
                 html: '<div class="header-rock"></div>',
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             });
 
-            const popupContent = `
+            // Build popup content with found photo if available
+            let popupContent = `
                 <div class="rock-popup">
                     <h4>${rock.name}</h4>
                     ${rock.description ? `<p>${rock.description}</p>` : ''}
                     <small>Added by: ${rock.ownerName}<br>Date: ${new Date(rock.date).toLocaleDateString()}</small>
                     ${rock.photo ? `<br><img src="${rock.photo}" style="width:100px; height:100px; object-fit:cover; margin-top:5px; border-radius:5px;">` : ''}
-                </div>
             `;
+
+            if (rock.status === 'found') {
+                popupContent += `
+                    <div class="found-info">
+                        <p class="found-status">✅ Found by ${rock.foundBy} on ${new Date(rock.foundDate).toLocaleDateString()}</p>
+                        ${rock.foundPhoto ? `<img src="${rock.foundPhoto}" class="popup-found-photo" style="width:100px; height:100px; object-fit:cover; margin-top:5px; border-radius:5px;" onclick="showPhotoModal('${rock.foundPhoto}')" alt="Found photo">` : ''}
+                    </div>
+                `;
+            }
+
+            popupContent += `</div>`;
 
             L.marker([rock.lat, rock.lng], { icon: rockIcon })
                 .addTo(map)
@@ -537,6 +549,13 @@
                                     : '🎨 Hidden'
                                 }
                             </div>
+                            ${rock.status === 'found' && rock.foundPhoto ?
+                                `<div class="found-photo-container">
+                                    <h5>📸 Found Photo:</h5>
+                                    <img src="${rock.foundPhoto}" class="found-photo" alt="Found photo" onclick="showPhotoModal('${rock.foundPhoto}')">
+                                </div>` : ''
+                            }
+                            </div>
                         </div>
                     </div>
                 `;
@@ -565,6 +584,207 @@
             const modal = document.querySelector('.photo-modal');
             if (modal) {
                 document.body.removeChild(modal);
+            }
+        }
+
+        // Show photo capture modal for marking rock as found
+        function showFoundPhotoModal(rock, finderName) {
+            const modal = document.createElement('div');
+            modal.className = 'found-photo-modal modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>📸 Mark "${rock.name}" as Found</h3>
+                    <p>Take a photo of the rock to prove you found it!</p>
+                    <p><strong>Found by:</strong> ${finderName}</p>
+
+                    <div class="photo-capture-section">
+                        <div class="photo-buttons">
+                            <button type="button" id="found-camera-btn" class="btn maple">📷 Take Photo</button>
+                            <button type="button" id="found-gallery-btn" class="btn fantail">🖼️ Choose Photo</button>
+                        </div>
+
+                        <div id="found-photo-preview" class="photo-preview hidden">
+                            <img id="found-preview-image" src="" alt="Found photo preview">
+                            <button id="found-remove-photo" class="btn secondary">Remove Photo</button>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button id="confirm-found" class="btn fern" disabled>✅ Confirm Found</button>
+                        <button id="cancel-found" class="btn secondary">❌ Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            let selectedFoundPhoto = null;
+
+            // Camera button
+            document.getElementById('found-camera-btn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                input.style.display = 'none';
+                input.addEventListener('change', function(e) {
+                    if (e.target.files[0]) {
+                        handleFoundPhotoSelection(e.target.files[0]);
+                    }
+                });
+                document.body.appendChild(input);
+                input.click();
+                setTimeout(() => document.body.removeChild(input), 1000);
+            });
+
+            // Gallery button
+            document.getElementById('found-gallery-btn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.style.display = 'none';
+                input.addEventListener('change', function(e) {
+                    if (e.target.files[0]) {
+                        handleFoundPhotoSelection(e.target.files[0]);
+                    }
+                });
+                document.body.appendChild(input);
+                input.click();
+                setTimeout(() => document.body.removeChild(input), 1000);
+            });
+
+            // Remove photo
+            document.getElementById('found-remove-photo').addEventListener('click', function() {
+                selectedFoundPhoto = null;
+                document.getElementById('found-photo-preview').classList.add('hidden');
+                document.getElementById('confirm-found').disabled = true;
+            });
+
+            // Confirm found
+            document.getElementById('confirm-found').addEventListener('click', function() {
+                if (selectedFoundPhoto) {
+                    markRockAsFound(rock, finderName, selectedFoundPhoto);
+                    document.body.removeChild(modal);
+                } else {
+                    alert('❌ Photo is required to mark rock as found!');
+                }
+            });
+
+            // Cancel
+            document.getElementById('cancel-found').addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+
+            // Handle photo selection with compression
+            function handleFoundPhotoSelection(file) {
+                if (file && file.type.startsWith('image/')) {
+                    console.log(`📸 Found photo - Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('⚠️ Photo is too large. Please choose a smaller image (under 5MB).');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            // Compress the found photo
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+
+                            const maxWidth = 400;
+                            const maxHeight = 300;
+                            let { width, height } = img;
+
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height = height * (maxWidth / width);
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width = width * (maxHeight / height);
+                                    height = maxHeight;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            let quality = 0.3;
+                            let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                            while (compressedDataUrl.length > 500000 && quality > 0.1) {
+                                quality -= 0.05;
+                                compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                            }
+
+                            console.log(`📸 Found photo compressed: ${(compressedDataUrl.length / 1024).toFixed(2)} KB at ${(quality * 100).toFixed(0)}% quality`);
+
+                            if (compressedDataUrl.length > 500000) {
+                                alert('❌ Photo cannot be compressed enough. Please choose a smaller image.');
+                                return;
+                            }
+
+                            selectedFoundPhoto = compressedDataUrl;
+                            document.getElementById('found-preview-image').src = compressedDataUrl;
+                            document.getElementById('found-photo-preview').classList.remove('hidden');
+                            document.getElementById('confirm-found').disabled = false;
+                            console.log('✅ Found photo ready for upload');
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        // Mark rock as found with photo
+        function markRockAsFound(rock, finderName, foundPhoto) {
+            // Find the rock in the main array and update it
+            const mainRockIndex = rocks.findIndex(r => r.id === rock.id);
+            if (mainRockIndex !== -1) {
+                rocks[mainRockIndex].status = 'found';
+                rocks[mainRockIndex].foundBy = finderName;
+                rocks[mainRockIndex].foundDate = new Date().toISOString();
+                rocks[mainRockIndex].foundPhoto = foundPhoto;
+
+                console.log(`📸 Marking rock as found with photo (${(foundPhoto.length / 1024).toFixed(2)} KB)`);
+
+                // Update local storage
+                localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+
+                // Update Firebase if available
+                if (db) {
+                    db.collection('rocks').doc(rock.id).update({
+                        status: 'found',
+                        foundBy: finderName,
+                        foundDate: new Date().toISOString(),
+                        foundPhoto: foundPhoto
+                    }).then(() => {
+                        console.log('🔥 Rock marked as found in Firebase with photo');
+                        alert(`🎉 "${rock.name}" marked as found by ${finderName} with photo!`);
+                    }).catch((error) => {
+                        console.log('❌ Error updating Firebase:', error);
+                        alert(`⚠️ Rock marked as found locally, but failed to sync with Firebase: ${error.message}`);
+                    });
+                } else {
+                    alert(`🎉 "${rock.name}" marked as found by ${finderName} with photo!`);
+                }
+
+                // Refresh display
+                if (map) {
+                    map.eachLayer(function(layer) {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    displayRocks();
+                }
+
+                updateStats();
             }
         }
 
@@ -684,7 +904,7 @@
                 }
             });
 
-            // Mark as Found button
+            // Mark as Found button - with photo requirement
             document.getElementById('mark-found-mode').addEventListener('click', function() {
                 const hiddenRocks = rocks.filter(rock => rock.status !== 'found');
 
@@ -707,44 +927,8 @@
                         const rock = hiddenRocks[rockIndex];
                         const finderName = prompt(`Who found "${rock.name}"?`, 'Anonymous') || 'Anonymous';
 
-                        if (confirm(`Mark "${rock.name}" as found by ${finderName}?`)) {
-                            // Find the rock in the main array and update it
-                            const mainRockIndex = rocks.findIndex(r => r.id === rock.id);
-                            if (mainRockIndex !== -1) {
-                                rocks[mainRockIndex].status = 'found';
-                                rocks[mainRockIndex].foundBy = finderName;
-                                rocks[mainRockIndex].foundDate = new Date().toISOString();
-
-                                // Update local storage
-                                localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
-
-                                // Update Firebase if available
-                                if (db) {
-                                    db.collection('rocks').doc(rock.id).update({
-                                        status: 'found',
-                                        foundBy: finderName,
-                                        foundDate: new Date().toISOString()
-                                    }).then(() => {
-                                        console.log('Rock marked as found in Firebase');
-                                    }).catch((error) => {
-                                        console.log('Error updating Firebase:', error);
-                                    });
-                                }
-
-                                // Refresh display
-                                if (map) {
-                                    map.eachLayer(function(layer) {
-                                        if (layer instanceof L.Marker) {
-                                            map.removeLayer(layer);
-                                        }
-                                    });
-                                    displayRocks();
-                                }
-
-                                updateStats();
-                                alert(`🎉 "${rock.name}" marked as found by ${finderName}!`);
-                            }
-                        }
+                        // Show photo capture modal for found rock
+                        showFoundPhotoModal(rock, finderName);
                     } else {
                         alert('Invalid selection!');
                     }
