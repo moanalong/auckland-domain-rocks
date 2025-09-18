@@ -276,6 +276,16 @@
 
             console.log('🔍 Rock object created:', rock.name);
 
+            // Check total rock size before saving
+            const rockString = JSON.stringify(rock);
+            const rockSizeKB = rockString.length / 1024;
+            console.log(`📊 Rock data size: ${rockSizeKB.toFixed(2)} KB`);
+
+            if (rockString.length > 900000) { // 900KB limit for Firebase
+                alert('❌ Rock data is too large to save. Please use a smaller photo or remove the photo.');
+                return;
+            }
+
             // Save to Firebase first (this will trigger the real-time listener)
             if (db) {
                 console.log('🔥 Saving to Firebase...');
@@ -390,14 +400,67 @@
             document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = foundRocks;
         }
 
-        // Photo handling
+        // Photo handling with compression
         function handlePhotoSelection(file) {
             if (file && file.type.startsWith('image/')) {
+                console.log(`📸 Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+
+                // Check if file is too large (over 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('⚠️ Photo is too large. Please choose a smaller image (under 5MB).');
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    selectedPhoto = e.target.result;
-                    document.getElementById('preview-image').src = selectedPhoto;
-                    document.getElementById('photo-preview').classList.remove('hidden');
+                    const img = new Image();
+                    img.onload = function() {
+                        // Compress the image
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Set maximum dimensions
+                        const maxWidth = 800;
+                        const maxHeight = 600;
+                        let { width, height } = img;
+
+                        // Calculate new dimensions
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height = height * (maxWidth / width);
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width = width * (maxHeight / height);
+                                height = maxHeight;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // Draw and compress
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Convert to compressed JPEG
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+
+                        console.log(`📸 Compressed size: ${(compressedDataUrl.length / 1024 / 1024).toFixed(2)} MB`);
+
+                        // Check if still too large for Firebase (Firebase limit is ~1MB per document)
+                        if (compressedDataUrl.length > 800000) { // 800KB limit
+                            alert('⚠️ Photo is still too large after compression. Please choose a smaller image.');
+                            return;
+                        }
+
+                        selectedPhoto = compressedDataUrl;
+                        document.getElementById('preview-image').src = compressedDataUrl;
+                        document.getElementById('photo-preview').classList.remove('hidden');
+
+                        console.log('✅ Photo compressed and ready for upload');
+                    };
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
