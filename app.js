@@ -988,7 +988,7 @@ class RockHunterApp {
     toggleRockPanel() {
         const panel = document.getElementById('rock-panel');
         const button = document.getElementById('toggle-view');
-        
+
         if (panel.classList.contains('hidden')) {
             this.showRockPanel();
             button.textContent = '🗺️ Show Map';
