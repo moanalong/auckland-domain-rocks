@@ -601,47 +601,82 @@
                     return;
                 }
 
-                // Show rock selection for removal
-                let rockList = 'Select a rock to remove:\n\n';
-                rocks.forEach((rock, index) => {
-                    rockList += `${index + 1}. ${rock.name} (by ${rock.ownerName})\n`;
+                // Get current user name for ownership check
+                const currentUserName = prompt('Please enter your name to verify ownership:');
+                if (!currentUserName) {
+                    alert('❌ Name is required to remove rocks.');
+                    return;
+                }
+
+                // Filter rocks that can be removed (own rocks that are not found)
+                const removableRocks = rocks.filter(rock => {
+                    // Check if rock belongs to current user
+                    const isOwner = rock.ownerName && rock.ownerName.toLowerCase() === currentUserName.toLowerCase();
+                    // Check if rock is not found
+                    const isNotFound = rock.status !== 'found';
+                    return isOwner && isNotFound;
+                });
+
+                if (removableRocks.length === 0) {
+                    alert('❌ No rocks available for removal!\n\nYou can only remove:\n• Rocks that you posted\n• Rocks that have not been found yet');
+                    return;
+                }
+
+                // Show only removable rocks
+                let rockList = 'Your rocks available for removal:\n\n';
+                removableRocks.forEach((rock, index) => {
+                    rockList += `${index + 1}. ${rock.name} (Hidden since ${new Date(rock.date).toLocaleDateString()})\n`;
                 });
 
                 const selection = prompt(rockList + '\nEnter the number of the rock to remove (or cancel):');
 
                 if (selection && !isNaN(selection)) {
                     const rockIndex = parseInt(selection) - 1;
-                    if (rockIndex >= 0 && rockIndex < rocks.length) {
-                        const rock = rocks[rockIndex];
+                    if (rockIndex >= 0 && rockIndex < removableRocks.length) {
+                        const rock = removableRocks[rockIndex];
 
-                        if (confirm(`Are you sure you want to remove "${rock.name}"?`)) {
-                            // Remove from array
-                            rocks.splice(rockIndex, 1);
+                        // Double-check ownership and found status
+                        if (rock.ownerName.toLowerCase() !== currentUserName.toLowerCase()) {
+                            alert('❌ You can only remove rocks that you posted!');
+                            return;
+                        }
 
-                            // Update local storage
-                            localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+                        if (rock.status === 'found') {
+                            alert('❌ Cannot remove rocks that have been found!');
+                            return;
+                        }
 
-                            // Remove from Firebase if available
-                            if (db) {
-                                db.collection('rocks').doc(rock.id).delete().then(() => {
-                                    console.log('Rock removed from Firebase');
-                                }).catch((error) => {
-                                    console.log('Error removing from Firebase:', error);
-                                });
+                        if (confirm(`Are you sure you want to remove "${rock.name}"?\n\nThis action cannot be undone.`)) {
+                            // Find rock in main array and remove it
+                            const mainRockIndex = rocks.findIndex(r => r.id === rock.id);
+                            if (mainRockIndex !== -1) {
+                                rocks.splice(mainRockIndex, 1);
+
+                                // Update local storage
+                                localStorage.setItem('auckland_domain_rocks', JSON.stringify(rocks));
+
+                                // Remove from Firebase if available
+                                if (db) {
+                                    db.collection('rocks').doc(rock.id).delete().then(() => {
+                                        console.log('Rock removed from Firebase');
+                                    }).catch((error) => {
+                                        console.log('Error removing from Firebase:', error);
+                                    });
+                                }
+
+                                // Refresh display
+                                if (map) {
+                                    map.eachLayer(function(layer) {
+                                        if (layer instanceof L.Marker) {
+                                            map.removeLayer(layer);
+                                        }
+                                    });
+                                    displayRocks();
+                                }
+
+                                updateStats();
+                                alert(`✅ Rock "${rock.name}" has been removed successfully!`);
                             }
-
-                            // Refresh display
-                            if (map) {
-                                map.eachLayer(function(layer) {
-                                    if (layer instanceof L.Marker) {
-                                        map.removeLayer(layer);
-                                    }
-                                });
-                                displayRocks();
-                            }
-
-                            updateStats();
-                            alert(`✅ Rock "${rock.name}" has been removed!`);
                         }
                     } else {
                         alert('Invalid selection!');
